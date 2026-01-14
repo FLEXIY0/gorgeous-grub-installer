@@ -66,7 +66,13 @@ sudo apt update && sudo apt install gum
 sudo dnf install gum
 ```
 
-### Запуск
+### Быстрый запуск (одна команда)
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/FLEXIY0/gorgeous-grub-installer/master/gorgeous-grub.sh)
+```
+
+### Полная установка
 
 ```bash
 git clone https://github.com/FLEXIY0/gorgeous-grub-installer.git
