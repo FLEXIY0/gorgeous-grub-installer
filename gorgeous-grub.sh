@@ -6,8 +6,6 @@
 # ║                    https://github.com/Jacksaur/Gorgeous-GRUB             ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-# set -e  # Отключено для корректной работы с grep
-
 # Цвета
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -16,118 +14,146 @@ BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 WHITE='\033[1;37m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 BOLD='\033[1m'
 
 # Конфигурация
 GRUB_THEMES_DIR="/boot/grub/themes"
 GRUB_CONFIG="/etc/default/grub"
 TEMP_DIR="/tmp/gorgeous-grub-install"
+USE_GUM=false
 
-# База данных тем: "Название|URL|Тип (github/pling/gitlab)|Папка темы|Описание"
+# Проверяем наличие gum
+if command -v gum &> /dev/null; then
+    USE_GUM=true
+fi
+
+# База данных тем: "Название|URL|Тип|Папка|Описание|Категория"
 declare -a THEMES=(
-    # Игровые темы
-    "Minegrub|https://github.com/Lxtharia/minegrub-theme|github|minegrub|🎮 Minecraft главное меню с прокручивающимся текстом"
-    "Minegrub Combined|https://github.com/Lxtharia/double-minegrub-menu|github-script|minegrub|🎮 Двойное меню Minecraft (главное + выбор мира)"
-    "Minegrub World Select|https://github.com/Lxtharia/minegrub-world-sel-theme|github|minegrub-world-selection|🎮 Minecraft экран выбора мира"
-    "Grubphemous|https://github.com/pvtoari/grubphemous-theme|github|grubphemous|⚔️ Тема в стиле Blasphemous"
-    "DOOM|https://github.com/Lxtharia/doomgrub-theme|github|doomgrub|👹 Тема в стиле DOOM"
-    "Hollow Grub|https://github.com/sergoncano/hollow-knight-grub-theme|github|hollow-knight|🦋 Тема Hollow Knight"
-    "GrubSouls|https://github.com/PedroMMarinho/grubsouls-theme|github|grubsouls|⚔️ Dark Souls тема"
-    "Grubnautica|https://github.com/tatounee/Grubnautica|github|Grubnautica|🌊 Subnautica тема"
-    "ULTRAKILL|https://www.pling.com/p/2217746|pling|ultrakill|🔫 ULTRAKILL тема"
-    "Crossgrub|https://github.com/krypciak/crossgrub|github|crossgrub|✝️ CrossCode тема"
-    "CelesteGRUB|https://github.com/suilven641/CelesteGRUB|github|CelesteGRUB|🍓 Celeste тема"
-    "Lobotomy GRUB|https://github.com/rats-scamper/LoboGrubTheme|github|lobogrub|🧠 Lobotomy Corporation тема"
-    "Grubshin Bootpact|https://github.com/max-ishere/grubshin-bootpact|github-installer|grubshin|⭐ Genshin Impact тема"
+    # 🎮 Игровые темы
+    "Minegrub|https://github.com/Lxtharia/minegrub-theme|github|minegrub|Minecraft главное меню|🎮 Игровые"
+    "Minegrub Combined|https://github.com/Lxtharia/double-minegrub-menu|github-script|minegrub|Двойное меню Minecraft|🎮 Игровые"
+    "Minegrub World Select|https://github.com/Lxtharia/minegrub-world-sel-theme|github|minegrub-world-selection|Minecraft выбор мира|🎮 Игровые"
+    "Grubphemous|https://github.com/pvtoari/grubphemous-theme|github|grubphemous|Blasphemous стиль|🎮 Игровые"
+    "DOOM|https://github.com/Lxtharia/doomgrub-theme|github|doomgrub|DOOM стиль|🎮 Игровые"
+    "Hollow Grub|https://github.com/sergoncano/hollow-knight-grub-theme|github|hollow-knight|Hollow Knight тема|🎮 Игровые"
+    "GrubSouls|https://github.com/PedroMMarinho/grubsouls-theme|github|grubsouls|Dark Souls тема|🎮 Игровые"
+    "Grubnautica|https://github.com/tatounee/Grubnautica|github|Grubnautica|Subnautica тема|🎮 Игровые"
+    "ULTRAKILL|https://www.pling.com/p/2217746|pling|ultrakill|ULTRAKILL тема|🎮 Игровые"
+    "Crossgrub|https://github.com/krypciak/crossgrub|github|crossgrub|CrossCode тема|🎮 Игровые"
+    "CelesteGRUB|https://github.com/suilven641/CelesteGRUB|github|CelesteGRUB|Celeste тема|🎮 Игровые"
+    "Lobotomy GRUB|https://github.com/rats-scamper/LoboGrubTheme|github|lobogrub|Lobotomy Corporation|🎮 Игровые"
+    "Sekiro|https://github.com/semimqmo/sekiro_grub_theme|github|sekiro|Sekiro тема|🎮 Игровые"
     
-    # Киберпанк/Ретро
-    "CyberGRUB-2077|https://github.com/adnksharp/CyberGRUB-2077|github|CyberGRUB-2077|🌃 Cyberpunk 2077 тема"
-    "Cyberpunk 2077|https://www.pling.com/p/1515662|pling|cyberpunk2077|🌃 Официальная Cyberpunk тема"
-    "CyberRe|https://www.pling.com/p/1420727|pling|cyberre|🌃 Кибер-ретро тема"
-    "Cyberpunk|https://www.pling.com/p/1429443|pling|cyberpunk|🌃 Общая киберпанк тема"
-    "CyberXero|https://www.pling.com/p/1502415|pling|cyberxero|🌃 CyberXero тема"
-    "Virtuaverse|https://github.com/Patato777/dotfiles|github-subfolder|grub|🕹️ Virtuaverse пиксельная тема"
-    "CRT-Amber|https://www.pling.com/p/1727268|pling|crt-amber|📺 Ретро CRT монитор"
-    "OldBIOS|https://www.pling.com/p/2072033|pling|oldbios|💾 Старый BIOS стиль"
-    "Arcade|https://github.com/nobreDaniel/dotfile|github-subfolder|grub|🕹️ Аркадная тема"
+    # 🌃 Киберпанк/Ретро
+    "CyberGRUB-2077|https://github.com/adnksharp/CyberGRUB-2077|github|CyberGRUB-2077|Cyberpunk 2077|🌃 Киберпанк"
+    "Cyberpunk 2077|https://www.pling.com/p/1515662|pling|cyberpunk2077|Официальная Cyberpunk|🌃 Киберпанк"
+    "CyberRe|https://www.pling.com/p/1420727|pling|cyberre|Кибер-ретро|🌃 Киберпанк"
+    "Virtuaverse|https://github.com/Patato777/dotfiles|github-subfolder|grub|Пиксельный киберпанк|🌃 Киберпанк"
+    "CRT-Amber|https://www.pling.com/p/1727268|pling|crt-amber|Ретро CRT монитор|🌃 Киберпанк"
+    "OldBIOS|https://www.pling.com/p/2072033|pling|oldbios|Старый BIOS|🌃 Киберпанк"
+    "Matrix-Morpheus|https://github.com/Priyank-Adhav/Matrix-Morpheus-GRUB-Theme|github|Matrix-Morpheus|Матрица тема|🌃 Киберпанк"
     
-    # Аниме/Японские
-    "YoRHa|https://github.com/OliveThePuffin/yorha-grub-theme|github|yorha|🤖 NieR: Automata тема"
-    "Persona 5 Royal|https://www.pling.com/p/2122684|pling|persona5|🎭 Persona 5 Royal тема"
-    "Wuthering Waves|https://www.pling.com/p/2184155|pling|wuthering-waves|🌊 Wuthering Waves тема"
-    "Sayonara|https://github.com/samoht9277/dotfiles|github-subfolder|grub/themes/sayonara|👋 Минималистичная японская тема"
-    "VA-11 HALL-A|https://github.com/happyzxzxz/valhallaDots|github-subfolder|grub|🍸 VA-11 HALL-A бар тема"
-    "Milk Outside|https://www.pling.com/p/2296341|pling|milk|🥛 Milk Outside A Bag of Milk"
+    # 🎌 Аниме/Японские
+    "YoRHa|https://github.com/OliveThePuffin/yorha-grub-theme|github|yorha|NieR: Automata|🎌 Аниме"
+    "Persona 5 Royal|https://www.pling.com/p/2122684|pling|persona5|Persona 5 Royal|🎌 Аниме"
+    "Wuthering Waves|https://www.pling.com/p/2184155|pling|wuthering-waves|Wuthering Waves|🎌 Аниме"
+    "Grubshin Bootpact|https://github.com/max-ishere/grubshin-bootpact|github-installer|grubshin|Genshin Impact|🎌 Аниме"
+    "VA-11 HALL-A|https://github.com/happyzxzxz/valhallaDots|github-subfolder|grub|VA-11 HALL-A бар|🎌 Аниме"
+    "Milk Outside|https://www.pling.com/p/2296341|pling|milk|Milk Outside A Bag|🎌 Аниме"
     
-    # Минималистичные/Современные
-    "Catppuccin|https://github.com/catppuccin/grub|github-installer|catppuccin|🐱 Пастельная Catppuccin тема"
-    "Sleek|https://www.pling.com/p/1414997|pling|sleek|✨ Современная элегантная тема"
-    "HyperFluent|https://www.pling.com/p/2133341|pling|hyperfluent|💫 Windows 11 стиль"
-    "Elegant|https://github.com/vinceliuice/Elegant-grub2-themes|github-installer|Elegant|🎩 Большой набор элегантных тем"
-    "Modern Design|https://github.com/vinceliuice/grub2-themes|github-installer|grub2-themes|🎨 Современный дизайн (набор)"
-    "Graphite|https://www.pling.com/p/1676418|pling|graphite|⚫ Графитовая минималистичная"
-    "Neumorphic|https://www.pling.com/p/1906415|pling|neumorphic|🔘 Неоморфизм стиль"
-    "Atomic|https://www.pling.com/p/1200710|pling|atomic|⚛️ Атомная тема"
-    "Breeze|https://www.pling.com/p/1000111|pling|breeze|🌬️ KDE Breeze тема"
-    "Solarized-Dark|https://www.pling.com/p/1177401|pling|solarized-dark|🌅 Solarized Dark"
-    "Plasma Light|https://www.pling.com/p/1197062|pling|plasma-light|☀️ KDE Plasma светлая"
-    "Plasma Dark|https://www.pling.com/p/1195799|pling|plasma-dark|🌙 KDE Plasma тёмная"
-    "Distro Themes|https://www.pling.com/p/1482847|pling|distro|🐧 Темы дистрибутивов Linux"
-    "Framework|https://github.com/HeinrichZurHorstMeyer/Framework-Grub-Theme|github|Framework|💻 Framework Laptop тема"
+    # ✨ Минималистичные
+    "Catppuccin|https://github.com/catppuccin/grub|github-installer|catppuccin|Пастельная тема|✨ Минимализм"
+    "Sleek|https://www.pling.com/p/1414997|pling|sleek|Элегантная тема|✨ Минимализм"
+    "HyperFluent|https://www.pling.com/p/2133341|pling|hyperfluent|Windows 11 стиль|✨ Минимализм"
+    "Elegant|https://github.com/vinceliuice/Elegant-grub2-themes|github-installer|Elegant|Элегантный набор|✨ Минимализм"
+    "Modern Design|https://github.com/vinceliuice/grub2-themes|github-installer|grub2-themes|Современный дизайн|✨ Минимализм"
+    "Graphite|https://www.pling.com/p/1676418|pling|graphite|Графитовая|✨ Минимализм"
+    "Neumorphic|https://www.pling.com/p/1906415|pling|neumorphic|Неоморфизм|✨ Минимализм"
+    "Breeze|https://www.pling.com/p/1000111|pling|breeze|KDE Breeze|✨ Минимализм"
+    "Solarized-Dark|https://www.pling.com/p/1177401|pling|solarized-dark|Solarized Dark|✨ Минимализм"
+    "Framework|https://github.com/HeinrichZurHorstMeyer/Framework-Grub-Theme|github|Framework|Framework Laptop|✨ Минимализм"
     
-    # Sci-Fi/Space
-    "Space Isolation|https://github.com/callmenoodles/space-isolation|github|space-isolation|🚀 Космическая изоляция"
-    "Descent|https://www.pling.com/p/1000083|pling|descent|🛸 Классическая Descent"
-    "Matrix-Morpheus|https://github.com/Priyank-Adhav/Matrix-Morpheus-GRUB-Theme|github|Matrix-Morpheus|🟢 Матрица тема"
+    # 🚀 Sci-Fi/Космос
+    "Space Isolation|https://github.com/callmenoodles/space-isolation|github|space-isolation|Космическая изоляция|🚀 Sci-Fi"
+    "Descent|https://www.pling.com/p/1000083|pling|descent|Классическая Descent|🚀 Sci-Fi"
+    "SteamOS|https://github.com/LegendaryBibo/Steam-Big-Picture-Grub-Theme|github|steam|Steam Big Picture|🚀 Sci-Fi"
     
-    # Другие
-    "SteamOS|https://github.com/LegendaryBibo/Steam-Big-Picture-Grub-Theme|github|steam|🎮 Steam Big Picture"
-    "DedSec|https://www.pling.com/p/1569525|pling|dedsec|👁️ Watch Dogs DedSec"
-    "Sekiro|https://github.com/semimqmo/sekiro_grub_theme|github|sekiro|⚔️ Sekiro тема"
-    "Sekiro Shadow|https://github.com/MrVivekRajan/Grub-Themes|github-subfolder|SekiroShadow|⚔️ Sekiro Shadow версия"
-    "Dark Matter|https://www.pling.com/p/1603282|pling|dark-matter|🌑 Тёмная материя"
-    "Fallout|https://www.pling.com/p/1230882|pling|fallout|☢️ Fallout тема"
-    "Linux Mind|https://www.pling.com/p/1397139|pling|linux-mind|🧠 Linux Mind"
-    "BSOL|https://github.com/harishnkr/bsol|github|bsol|💙 Blue Screen of Linux"
-    "Grand Theft Gentoo|https://gitlab.com/imnotpua/grub_gtg|gitlab|gtg|🚗 GTA стиль для Gentoo"
-    "Grubby Terminal|https://gitlab.com/perthshiretim/grubby-terminal|gitlab|grubby-terminal|💻 Терминальная тема"
-    "Billy's Agent|https://gitlab.com/Drorago/billys-agent-grub2-theme|gitlab|billys-agent|🕵️ Billy's Agent"
-    "LiquidGlass|https://github.com/Purp1eDuck2008/Liquid-GRUB|github|LiquidGlass|💧 Стеклянный эффект"
+    # 🎭 Другие
+    "DedSec|https://www.pling.com/p/1569525|pling|dedsec|Watch Dogs DedSec|🎭 Другие"
+    "Dark Matter|https://www.pling.com/p/1603282|pling|dark-matter|Тёмная материя|🎭 Другие"
+    "Fallout|https://www.pling.com/p/1230882|pling|fallout|Fallout тема|🎭 Другие"
+    "BSOL|https://github.com/harishnkr/bsol|github|bsol|Blue Screen of Linux|🎭 Другие"
+    "Grand Theft Gentoo|https://gitlab.com/imnotpua/grub_gtg|gitlab|gtg|GTA стиль|🎭 Другие"
+    "LiquidGlass|https://github.com/Purp1eDuck2008/Liquid-GRUB|github|LiquidGlass|Стеклянный эффект|🎭 Другие"
 )
 
-# Функции для красивого вывода
+# ════════════════════════════════════════════════════════════════════════════
+# 🎨 GUM-стилизованные функции
+# ════════════════════════════════════════════════════════════════════════════
+
 print_header() {
-    clear
-    echo -e "${PURPLE}"
-    echo "╔═══════════════════════════════════════════════════════════════════════════╗"
-    echo "║                      🎨 Gorgeous GRUB Installer                          ║"
-    echo "║        Интерактивный установщик тем GRUB из коллекции Gorgeous-GRUB      ║"
-    echo "╚═══════════════════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
+    if $USE_GUM; then
+        clear
+        gum style \
+            --border double \
+            --border-foreground 212 \
+            --padding "1 3" \
+            --margin "1" \
+            --align center \
+            "🎨 $(gum style --foreground 212 --bold 'Gorgeous GRUB Installer')" \
+            "" \
+            "$(gum style --foreground 245 'Красивые темы для вашего загрузчика')"
+    else
+        clear
+        echo -e "${PURPLE}"
+        echo "╔═══════════════════════════════════════════════════════════════════════════╗"
+        echo "║                      🎨 Gorgeous GRUB Installer                          ║"
+        echo "║              Красивые темы для вашего загрузчика                         ║"
+        echo "╚═══════════════════════════════════════════════════════════════════════════╝"
+        echo -e "${NC}"
+    fi
 }
 
 print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    if $USE_GUM; then
+        gum style --foreground 10 "✓ $1"
+    else
+        echo -e "${GREEN}✓ $1${NC}"
+    fi
 }
 
 print_error() {
-    echo -e "${RED}✗ $1${NC}"
+    if $USE_GUM; then
+        gum style --foreground 9 "✗ $1"
+    else
+        echo -e "${RED}✗ $1${NC}"
+    fi
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    if $USE_GUM; then
+        gum style --foreground 11 "⚠ $1"
+    else
+        echo -e "${YELLOW}⚠ $1${NC}"
+    fi
 }
 
 print_info() {
-    echo -e "${CYAN}ℹ $1${NC}"
+    if $USE_GUM; then
+        gum style --foreground 12 "ℹ $1"
+    else
+        echo -e "${CYAN}ℹ $1${NC}"
+    fi
 }
 
-# Проверка зависимостей
+# ════════════════════════════════════════════════════════════════════════════
+# 🔧 Системные функции
+# ════════════════════════════════════════════════════════════════════════════
+
 check_dependencies() {
     local missing=()
-    
-    for cmd in git curl wget sudo; do
+    for cmd in git sudo; do
         if ! command -v $cmd &> /dev/null; then
             missing+=($cmd)
         fi
@@ -135,12 +161,10 @@ check_dependencies() {
     
     if [ ${#missing[@]} -ne 0 ]; then
         print_error "Отсутствуют зависимости: ${missing[*]}"
-        echo "Установите их командой: sudo pacman -S ${missing[*]}"
         exit 1
     fi
 }
 
-# Определение пути GRUB
 detect_grub() {
     if [ -d "/boot/grub" ]; then
         GRUB_PREFIX="grub"
@@ -152,170 +176,66 @@ detect_grub() {
         print_error "GRUB не найден!"
         exit 1
     fi
-    
-    print_info "Используется: /boot/$GRUB_PREFIX"
 }
 
-# Получить текущую тему
 get_current_theme() {
     if [ -f "$GRUB_CONFIG" ]; then
-        grep "^GRUB_THEME=" "$GRUB_CONFIG" 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "Не установлена"
+        local theme=$(grep "^GRUB_THEME=" "$GRUB_CONFIG" 2>/dev/null | cut -d'=' -f2 | tr -d '"')
+        if [ -n "$theme" ]; then
+            basename "$(dirname "$theme")"
+        else
+            echo "Не установлена"
+        fi
     else
         echo "Конфиг не найден"
     fi
 }
 
-# Показать список установленных тем
-show_installed_themes() {
-    echo -e "\n${BOLD}📦 Установленные темы:${NC}"
+get_installed_themes() {
+    local themes=()
     if [ -d "$GRUB_THEMES_DIR" ]; then
-        local count=0
         for theme_dir in "$GRUB_THEMES_DIR"/*/; do
-            if [ -d "$theme_dir" ]; then
-                local name=$(basename "$theme_dir")
-                if [ -f "$theme_dir/theme.txt" ]; then
-                    echo -e "  ${GREEN}●${NC} $name"
-                    ((count++))
-                fi
+            if [ -f "$theme_dir/theme.txt" ]; then
+                themes+=("$(basename "$theme_dir")")
             fi
         done
-        if [ $count -eq 0 ]; then
-            echo -e "  ${YELLOW}Темы не найдены${NC}"
-        fi
-    else
-        echo -e "  ${YELLOW}Папка тем не существует${NC}"
     fi
+    echo "${themes[@]}"
 }
 
-# Показать категории тем
-show_categories() {
-    echo -e "\n${BOLD}📂 Категории тем:${NC}"
-    echo -e "  ${CYAN}1${NC}) 🎮 Игровые (Minecraft, DOOM, Dark Souls...)"
-    echo -e "  ${CYAN}2${NC}) 🌃 Киберпанк/Ретро"
-    echo -e "  ${CYAN}3${NC}) 🎌 Аниме/Японские"
-    echo -e "  ${CYAN}4${NC}) ✨ Минималистичные/Современные"
-    echo -e "  ${CYAN}5${NC}) 🚀 Sci-Fi/Космос"
-    echo -e "  ${CYAN}6${NC}) 📋 Все темы"
-    echo -e "  ${CYAN}0${NC}) ← Назад"
-}
+# ════════════════════════════════════════════════════════════════════════════
+# 📦 Функции установки
+# ════════════════════════════════════════════════════════════════════════════
 
-# Показать темы по категории
-show_themes_by_category() {
-    local category=$1
-    local start_idx=0
-    local end_idx=${#THEMES[@]}
-    
-    case $category in
-        1) # Игровые
-            start_idx=0; end_idx=13 ;;
-        2) # Киберпанк
-            start_idx=13; end_idx=22 ;;
-        3) # Аниме
-            start_idx=22; end_idx=29 ;;
-        4) # Минималистичные
-            start_idx=29; end_idx=44 ;;
-        5) # Sci-Fi
-            start_idx=44; end_idx=47 ;;
-        6) # Все
-            start_idx=0; end_idx=${#THEMES[@]} ;;
-    esac
-    
-    echo -e "\n${BOLD}🎨 Доступные темы:${NC}\n"
-    
-    local display_num=1
-    for ((i=start_idx; i<end_idx; i++)); do
-        IFS='|' read -r name url type folder desc <<< "${THEMES[$i]}"
-        printf "  ${CYAN}%2d${NC}) %-25s ${WHITE}%s${NC}\n" "$display_num" "$name" "$desc"
-        ((display_num++))
-    done
-    
-    echo -e "\n  ${CYAN} 0${NC}) ← Назад"
-    echo ""
-    echo -n "Выберите тему для установки: "
-    
-    read -r choice
-    
-    if [ "$choice" == "0" ]; then
-        return
-    fi
-    
-    local actual_idx=$((start_idx + choice - 1))
-    if [ $actual_idx -ge $start_idx ] && [ $actual_idx -lt $end_idx ]; then
-        install_theme $actual_idx
-    else
-        print_error "Неверный выбор"
-        sleep 1
-    fi
-}
-
-# Установка темы
-install_theme() {
-    local idx=$1
-    IFS='|' read -r name url type folder desc <<< "${THEMES[$idx]}"
-    
-    print_header
-    echo -e "${BOLD}🔧 Установка темы: $name${NC}"
-    echo -e "${WHITE}$desc${NC}\n"
-    
-    # Создаём временную директорию
-    rm -rf "$TEMP_DIR"
-    mkdir -p "$TEMP_DIR"
-    cd "$TEMP_DIR"
-    
-    case $type in
-        "github")
-            install_github_theme "$url" "$folder" "$name"
-            ;;
-        "github-script")
-            install_github_script_theme "$url" "$name"
-            ;;
-        "github-installer")
-            install_github_with_installer "$url" "$name"
-            ;;
-        "github-subfolder")
-            install_github_subfolder_theme "$url" "$folder" "$name"
-            ;;
-        "pling")
-            install_pling_theme "$url" "$folder" "$name"
-            ;;
-        "gitlab")
-            install_gitlab_theme "$url" "$folder" "$name"
-            ;;
-    esac
-    
-    # Очистка
-    cd /
-    rm -rf "$TEMP_DIR"
-    
-    echo ""
-    read -p "Нажмите Enter для продолжения..."
-}
-
-# Установка темы с GitHub
 install_github_theme() {
     local url=$1
     local folder=$2
     local name=$3
     
     print_info "Клонирование репозитория..."
-    git clone --depth 1 "$url.git" repo 2>/dev/null || {
+    
+    if $USE_GUM; then
+        gum spin --spinner dot --title "Клонирование $name..." -- \
+            git clone --depth 1 "$url.git" repo 2>/dev/null
+    else
+        git clone --depth 1 "$url.git" repo 2>/dev/null
+    fi
+    
+    if [ $? -ne 0 ]; then
         print_error "Не удалось клонировать репозиторий"
         return 1
-    }
+    fi
     
-    # Поиск папки с theme.txt
     local theme_path=""
-    theme_path=$(find repo -name "theme.txt" -printf "%h\n" | head -1)
+    theme_path=$(find repo -name "theme.txt" -printf "%h\n" 2>/dev/null | head -1)
     
     if [ -z "$theme_path" ]; then
-        print_error "Файл theme.txt не найден в репозитории"
+        print_error "Файл theme.txt не найден"
         return 1
     fi
     
     local theme_name=$(basename "$theme_path")
-    
     print_info "Найдена тема: $theme_name"
-    print_info "Копирование в $GRUB_THEMES_DIR..."
     
     sudo mkdir -p "$GRUB_THEMES_DIR"
     sudo cp -r "$theme_path" "$GRUB_THEMES_DIR/"
@@ -323,16 +243,23 @@ install_github_theme() {
     apply_theme "$GRUB_THEMES_DIR/$theme_name/theme.txt"
 }
 
-# Установка темы с GitHub с скриптом установки
 install_github_script_theme() {
     local url=$1
     local name=$2
     
     print_info "Клонирование репозитория..."
-    git clone --depth 1 "$url.git" repo 2>/dev/null || {
+    
+    if $USE_GUM; then
+        gum spin --spinner dot --title "Клонирование $name..." -- \
+            git clone --depth 1 "$url.git" repo 2>/dev/null
+    else
+        git clone --depth 1 "$url.git" repo 2>/dev/null
+    fi
+    
+    if [ $? -ne 0 ]; then
         print_error "Не удалось клонировать репозиторий"
         return 1
-    }
+    fi
     
     cd repo
     
@@ -346,53 +273,64 @@ install_github_script_theme() {
     fi
 }
 
-# Установка темы с GitHub с installer
 install_github_with_installer() {
     local url=$1
     local name=$2
     
     print_info "Клонирование репозитория..."
-    git clone --depth 1 "$url.git" repo 2>/dev/null || {
+    
+    if $USE_GUM; then
+        gum spin --spinner dot --title "Клонирование $name..." -- \
+            git clone --depth 1 "$url.git" repo 2>/dev/null
+    else
+        git clone --depth 1 "$url.git" repo 2>/dev/null
+    fi
+    
+    if [ $? -ne 0 ]; then
         print_error "Не удалось клонировать репозиторий"
         return 1
-    }
+    fi
     
     cd repo
     
     if [ -f "install.sh" ]; then
-        print_info "Найден скрипт установки. Запускаем..."
-        echo -e "${YELLOW}Следуйте инструкциям установщика темы:${NC}\n"
+        print_info "Запуск установщика темы..."
         sudo bash install.sh
         print_success "Установка завершена!"
     else
-        # Пробуем найти theme.txt
+        cd ..
         install_github_theme "$url" "" "$name"
     fi
 }
 
-# Установка темы из подпапки GitHub
 install_github_subfolder_theme() {
     local url=$1
     local folder=$2
     local name=$3
     
     print_info "Клонирование репозитория..."
-    git clone --depth 1 "$url.git" repo 2>/dev/null || {
+    
+    if $USE_GUM; then
+        gum spin --spinner dot --title "Клонирование $name..." -- \
+            git clone --depth 1 "$url.git" repo 2>/dev/null
+    else
+        git clone --depth 1 "$url.git" repo 2>/dev/null
+    fi
+    
+    if [ $? -ne 0 ]; then
         print_error "Не удалось клонировать репозиторий"
         return 1
-    }
+    fi
     
     if [ -d "repo/$folder" ]; then
         local theme_name=$(basename "$folder")
-        print_info "Копирование темы из подпапки $folder..."
-        
         sudo mkdir -p "$GRUB_THEMES_DIR"
         sudo cp -r "repo/$folder" "$GRUB_THEMES_DIR/$theme_name"
         
         if [ -f "$GRUB_THEMES_DIR/$theme_name/theme.txt" ]; then
             apply_theme "$GRUB_THEMES_DIR/$theme_name/theme.txt"
         else
-            print_warning "theme.txt не найден, тема может не работать"
+            print_warning "theme.txt не найден"
         fi
     else
         print_error "Папка $folder не найдена"
@@ -400,37 +338,40 @@ install_github_subfolder_theme() {
     fi
 }
 
-# Установка темы из GitLab
 install_gitlab_theme() {
     local url=$1
     local folder=$2
     local name=$3
     
     print_info "Клонирование репозитория GitLab..."
-    git clone --depth 1 "$url.git" repo 2>/dev/null || {
+    
+    if $USE_GUM; then
+        gum spin --spinner dot --title "Клонирование $name..." -- \
+            git clone --depth 1 "$url.git" repo 2>/dev/null
+    else
+        git clone --depth 1 "$url.git" repo 2>/dev/null
+    fi
+    
+    if [ $? -ne 0 ]; then
         print_error "Не удалось клонировать репозиторий"
         return 1
-    }
+    fi
     
-    # Поиск папки с theme.txt
     local theme_path=""
-    theme_path=$(find repo -name "theme.txt" -printf "%h\n" | head -1)
+    theme_path=$(find repo -name "theme.txt" -printf "%h\n" 2>/dev/null | head -1)
     
     if [ -z "$theme_path" ]; then
-        print_error "Файл theme.txt не найден в репозитории"
+        print_error "Файл theme.txt не найден"
         return 1
     fi
     
     local theme_name=$(basename "$theme_path")
-    
-    print_info "Найдена тема: $theme_name"
     sudo mkdir -p "$GRUB_THEMES_DIR"
     sudo cp -r "$theme_path" "$GRUB_THEMES_DIR/"
     
     apply_theme "$GRUB_THEMES_DIR/$theme_name/theme.txt"
 }
 
-# Установка темы с Pling
 install_pling_theme() {
     local url=$1
     local folder=$2
@@ -438,311 +379,459 @@ install_pling_theme() {
     
     print_warning "Темы с Pling требуют ручной загрузки."
     echo ""
-    echo -e "Для установки темы ${BOLD}$name${NC}:"
-    echo -e "  1. Откройте: ${CYAN}$url${NC}"
-    echo -e "  2. Нажмите на вкладку 'Files'"
-    echo -e "  3. Скачайте архив темы"
-    echo -e "  4. Распакуйте в: ${CYAN}$GRUB_THEMES_DIR/${NC}"
-    echo -e "  5. Запустите этот скрипт снова и выберите 'Применить установленную тему'"
-    echo ""
     
-    # Открываем URL в браузере
-    if command -v xdg-open &> /dev/null; then
-        read -p "Открыть ссылку в браузере? [Y/n]: " open_browser
-        if [[ "$open_browser" != "n" && "$open_browser" != "N" ]]; then
+    if $USE_GUM; then
+        gum style --foreground 15 "Для установки темы $(gum style --bold "$name"):"
+        echo "  1. Откройте: $(gum style --foreground 12 "$url")"
+        echo "  2. Нажмите на вкладку 'Files'"
+        echo "  3. Скачайте архив темы"
+        echo "  4. Распакуйте в: $(gum style --foreground 12 "$GRUB_THEMES_DIR/")"
+        echo "  5. Запустите скрипт снова и примените тему"
+        echo ""
+        
+        if gum confirm "Открыть ссылку в браузере?"; then
             xdg-open "$url" 2>/dev/null &
         fi
+    else
+        echo -e "Для установки темы ${BOLD}$name${NC}:"
+        echo -e "  1. Откройте: ${CYAN}$url${NC}"
+        echo -e "  2. Нажмите на вкладку 'Files'"
+        echo -e "  3. Скачайте архив темы"  
+        echo -e "  4. Распакуйте в: ${CYAN}$GRUB_THEMES_DIR/${NC}"
+        echo -e "  5. Запустите скрипт снова и примените тему"
     fi
 }
 
-# Применение темы
 apply_theme() {
     local theme_path=$1
     
     print_info "Применение темы..."
     
-    # Удаляем старую строку GRUB_THEME и добавляем новую
     sudo sed -i '/^GRUB_THEME=/d' "$GRUB_CONFIG"
     echo "GRUB_THEME=\"$theme_path\"" | sudo tee -a "$GRUB_CONFIG" > /dev/null
     
-    # Устанавливаем GRUB_TIMEOUT_STYLE=menu
     if ! grep -q "^GRUB_TIMEOUT_STYLE=menu" "$GRUB_CONFIG"; then
         sudo sed -i '/^GRUB_TIMEOUT_STYLE=/d' "$GRUB_CONFIG"
         echo "GRUB_TIMEOUT_STYLE=menu" | sudo tee -a "$GRUB_CONFIG" > /dev/null
     fi
     
-    # Обновляем конфигурацию GRUB
     print_info "Обновление конфигурации GRUB..."
     
-    if command -v update-grub &> /dev/null; then
-        sudo update-grub
-    elif [ -f "/boot/grub/grub.cfg" ]; then
-        sudo grub-mkconfig -o /boot/grub/grub.cfg
-    elif [ -f "/boot/grub2/grub.cfg" ]; then
-        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+    if $USE_GUM; then
+        gum spin --spinner dot --title "Обновление GRUB..." -- \
+            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+    else
+        sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
     fi
     
     print_success "Тема успешно применена!"
-    print_info "Тема: $theme_path"
     print_info "Перезагрузите компьютер, чтобы увидеть изменения."
 }
 
-# Применить установленную тему
-apply_installed_theme() {
+install_theme() {
+    local idx=$1
+    IFS='|' read -r name url type folder desc category <<< "${THEMES[$idx]}"
+    
     print_header
-    echo -e "${BOLD}📦 Выберите установленную тему для применения:${NC}\n"
     
-    if [ ! -d "$GRUB_THEMES_DIR" ]; then
-        print_error "Папка тем не существует"
-        read -p "Нажмите Enter..."
-        return
-    fi
-    
-    local themes=()
-    local count=0
-    
-    for theme_dir in "$GRUB_THEMES_DIR"/*/; do
-        if [ -f "$theme_dir/theme.txt" ]; then
-            local name=$(basename "$theme_dir")
-            themes+=("$name")
-            ((count++))
-            echo -e "  ${CYAN}$count${NC}) $name"
-        fi
-    done
-    
-    if [ $count -eq 0 ]; then
-        print_warning "Установленные темы не найдены"
-        read -p "Нажмите Enter..."
-        return
-    fi
-    
-    echo -e "\n  ${CYAN}0${NC}) ← Назад"
-    echo ""
-    read -p "Выберите тему: " choice
-    
-    if [ "$choice" == "0" ] || [ -z "$choice" ]; then
-        return
-    fi
-    
-    if [ "$choice" -ge 1 ] && [ "$choice" -le $count ]; then
-        local selected_theme="${themes[$((choice-1))]}"
-        apply_theme "$GRUB_THEMES_DIR/$selected_theme/theme.txt"
-        read -p "Нажмите Enter..."
+    if $USE_GUM; then
+        gum style \
+            --border rounded \
+            --border-foreground 212 \
+            --padding "1 2" \
+            --margin "1" \
+            "🔧 Установка: $(gum style --bold --foreground 212 "$name")" \
+            "" \
+            "$(gum style --foreground 245 "$desc")"
     else
-        print_error "Неверный выбор"
-        sleep 1
-    fi
-}
-
-# Удалить тему
-remove_theme() {
-    print_header
-    echo -e "${BOLD}🗑️ Удаление темы:${NC}\n"
-    
-    if [ ! -d "$GRUB_THEMES_DIR" ]; then
-        print_error "Папка тем не существует"
-        read -p "Нажмите Enter..."
-        return
+        echo -e "${BOLD}🔧 Установка темы: $name${NC}"
+        echo -e "${WHITE}$desc${NC}\n"
     fi
     
-    local themes=()
-    local count=0
-    
-    for theme_dir in "$GRUB_THEMES_DIR"/*/; do
-        if [ -d "$theme_dir" ]; then
-            local name=$(basename "$theme_dir")
-            themes+=("$name")
-            ((count++))
-            echo -e "  ${CYAN}$count${NC}) $name"
-        fi
-    done
-    
-    if [ $count -eq 0 ]; then
-        print_warning "Установленные темы не найдены"
-        read -p "Нажмите Enter..."
-        return
-    fi
-    
-    echo -e "\n  ${CYAN}0${NC}) ← Назад"
     echo ""
-    read -p "Выберите тему для удаления: " choice
     
-    if [ "$choice" == "0" ] || [ -z "$choice" ]; then
-        return
-    fi
+    rm -rf "$TEMP_DIR"
+    mkdir -p "$TEMP_DIR"
+    cd "$TEMP_DIR"
     
-    if [ "$choice" -ge 1 ] && [ "$choice" -le $count ]; then
-        local selected_theme="${themes[$((choice-1))]}"
-        
-        echo ""
-        read -p "Удалить тему '$selected_theme'? [y/N]: " confirm
-        
-        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-            sudo rm -rf "$GRUB_THEMES_DIR/$selected_theme"
-            print_success "Тема '$selected_theme' удалена"
-        else
-            print_info "Отменено"
-        fi
-        
-        read -p "Нажмите Enter..."
-    else
-        print_error "Неверный выбор"
-        sleep 1
-    fi
-}
-
-# Настройка разрешения GRUB
-set_resolution() {
-    print_header
-    echo -e "${BOLD}🖥️ Настройка разрешения GRUB:${NC}\n"
-    
-    local current_res=$(grep "^GRUB_GFXMODE=" "$GRUB_CONFIG" 2>/dev/null | cut -d'=' -f2 | tr -d '"')
-    echo -e "Текущее разрешение: ${CYAN}${current_res:-auto}${NC}\n"
-    
-    echo -e "Рекомендуемые разрешения:"
-    echo -e "  ${CYAN}1${NC}) 1920x1080"
-    echo -e "  ${CYAN}2${NC}) 1366x768"
-    echo -e "  ${CYAN}3${NC}) 1280x720"
-    echo -e "  ${CYAN}4${NC}) 2560x1440"
-    echo -e "  ${CYAN}5${NC}) 3840x2160"
-    echo -e "  ${CYAN}6${NC}) auto"
-    echo -e "  ${CYAN}7${NC}) Ввести вручную"
-    echo -e "\n  ${CYAN}0${NC}) ← Назад"
-    echo ""
-    read -p "Выберите: " choice
-    
-    local new_res=""
-    case $choice in
-        1) new_res="1920x1080" ;;
-        2) new_res="1366x768" ;;
-        3) new_res="1280x720" ;;
-        4) new_res="2560x1440" ;;
-        5) new_res="3840x2160" ;;
-        6) new_res="auto" ;;
-        7) 
-            read -p "Введите разрешение (например, 1920x1080): " new_res
-            ;;
-        0) return ;;
-        *) 
-            print_error "Неверный выбор"
-            sleep 1
-            return
-            ;;
+    case $type in
+        "github") install_github_theme "$url" "$folder" "$name" ;;
+        "github-script") install_github_script_theme "$url" "$name" ;;
+        "github-installer") install_github_with_installer "$url" "$name" ;;
+        "github-subfolder") install_github_subfolder_theme "$url" "$folder" "$name" ;;
+        "pling") install_pling_theme "$url" "$folder" "$name" ;;
+        "gitlab") install_gitlab_theme "$url" "$folder" "$name" ;;
     esac
     
-    if [ -n "$new_res" ]; then
-        sudo sed -i "s/^GRUB_GFXMODE=.*/GRUB_GFXMODE=$new_res/" "$GRUB_CONFIG"
-        
-        if ! grep -q "^GRUB_GFXMODE=" "$GRUB_CONFIG"; then
-            echo "GRUB_GFXMODE=$new_res" | sudo tee -a "$GRUB_CONFIG" > /dev/null
-        fi
-        
-        print_info "Обновление конфигурации GRUB..."
-        if [ -f "/boot/grub/grub.cfg" ]; then
-            sudo grub-mkconfig -o /boot/grub/grub.cfg
-        elif [ -f "/boot/grub2/grub.cfg" ]; then
-            sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-        fi
-        
-        print_success "Разрешение установлено: $new_res"
-        read -p "Нажмите Enter..."
+    cd /
+    rm -rf "$TEMP_DIR"
+    
+    echo ""
+    if $USE_GUM; then
+        gum input --placeholder "Нажмите Enter для продолжения..." > /dev/null
+    else
+        read -p "Нажмите Enter для продолжения..."
     fi
 }
 
-# Отключить двойное меню Minegrub
-disable_double_menu() {
-    print_info "Отключение двойного меню Minegrub..."
-    sudo grub-editenv - unset config_file 2>/dev/null || true
-    print_success "Двойное меню отключено"
-    sleep 1
+# ════════════════════════════════════════════════════════════════════════════
+# 🎮 Интерактивное меню с GUM
+# ════════════════════════════════════════════════════════════════════════════
+
+select_theme_to_install() {
+    print_header
+    
+    if $USE_GUM; then
+        # Собираем список тем для выбора
+        local options=()
+        for theme_data in "${THEMES[@]}"; do
+            IFS='|' read -r name url type folder desc category <<< "$theme_data"
+            options+=("$category  $name  •  $desc")
+        done
+        
+        echo ""
+        gum style --foreground 212 --bold "🎨 Выберите тему для установки"
+        gum style --foreground 245 "Используйте ↑↓ для навигации, Enter для выбора, Esc для отмены"
+        echo ""
+        
+        local selected
+        selected=$(printf '%s\n' "${options[@]}" | gum filter \
+            --height 20 \
+            --placeholder "Поиск темы..." \
+            --indicator "▸" \
+            --indicator.foreground 212 \
+            --match.foreground 212)
+        
+        if [ -z "$selected" ]; then
+            return
+        fi
+        
+        # Находим индекс выбранной темы
+        local idx=0
+        for theme_data in "${THEMES[@]}"; do
+            IFS='|' read -r name url type folder desc category <<< "$theme_data"
+            local check="$category  $name  •  $desc"
+            if [ "$check" == "$selected" ]; then
+                install_theme $idx
+                return
+            fi
+            ((idx++))
+        done
+    else
+        # Fallback без gum
+        echo -e "${BOLD}🎨 Доступные темы:${NC}\n"
+        
+        local idx=1
+        for theme_data in "${THEMES[@]}"; do
+            IFS='|' read -r name url type folder desc category <<< "$theme_data"
+            printf "  ${CYAN}%2d${NC}) %-20s ${WHITE}%s${NC}\n" "$idx" "$name" "$desc"
+            ((idx++))
+        done
+        
+        echo -e "\n  ${CYAN} 0${NC}) ← Назад"
+        echo ""
+        read -p "Выберите тему: " choice
+        
+        if [ "$choice" == "0" ] || [ -z "$choice" ]; then
+            return
+        fi
+        
+        if [ "$choice" -ge 1 ] && [ "$choice" -le ${#THEMES[@]} ]; then
+            install_theme $((choice - 1))
+        fi
+    fi
 }
 
-# Главное меню
+select_installed_theme() {
+    print_header
+    
+    local themes=($(get_installed_themes))
+    
+    if [ ${#themes[@]} -eq 0 ]; then
+        print_warning "Установленные темы не найдены"
+        sleep 2
+        return
+    fi
+    
+    if $USE_GUM; then
+        echo ""
+        gum style --foreground 212 --bold "✅ Выберите тему для применения"
+        echo ""
+        
+        local selected
+        selected=$(printf '%s\n' "${themes[@]}" | gum choose \
+            --cursor "▸ " \
+            --cursor.foreground 212 \
+            --selected.foreground 212)
+        
+        if [ -n "$selected" ]; then
+            apply_theme "$GRUB_THEMES_DIR/$selected/theme.txt"
+            gum input --placeholder "Нажмите Enter..." > /dev/null
+        fi
+    else
+        echo -e "${BOLD}📦 Установленные темы:${NC}\n"
+        
+        local idx=1
+        for theme in "${themes[@]}"; do
+            echo -e "  ${CYAN}$idx${NC}) $theme"
+            ((idx++))
+        done
+        
+        echo -e "\n  ${CYAN}0${NC}) ← Назад"
+        echo ""
+        read -p "Выберите тему: " choice
+        
+        if [ "$choice" == "0" ] || [ -z "$choice" ]; then
+            return
+        fi
+        
+        if [ "$choice" -ge 1 ] && [ "$choice" -le ${#themes[@]} ]; then
+            apply_theme "$GRUB_THEMES_DIR/${themes[$((choice-1))]}/theme.txt"
+            read -p "Нажмите Enter..."
+        fi
+    fi
+}
+
+remove_theme_menu() {
+    print_header
+    
+    local themes=($(get_installed_themes))
+    
+    if [ ${#themes[@]} -eq 0 ]; then
+        print_warning "Установленные темы не найдены"
+        sleep 2
+        return
+    fi
+    
+    if $USE_GUM; then
+        echo ""
+        gum style --foreground 9 --bold "🗑️ Выберите тему для удаления"
+        echo ""
+        
+        local selected
+        selected=$(printf '%s\n' "${themes[@]}" | gum choose \
+            --cursor "▸ " \
+            --cursor.foreground 9)
+        
+        if [ -n "$selected" ]; then
+            if gum confirm "Удалить тему '$selected'?"; then
+                sudo rm -rf "$GRUB_THEMES_DIR/$selected"
+                print_success "Тема '$selected' удалена"
+            fi
+            gum input --placeholder "Нажмите Enter..." > /dev/null
+        fi
+    else
+        echo -e "${BOLD}🗑️ Удаление темы:${NC}\n"
+        
+        local idx=1
+        for theme in "${themes[@]}"; do
+            echo -e "  ${CYAN}$idx${NC}) $theme"
+            ((idx++))
+        done
+        
+        echo -e "\n  ${CYAN}0${NC}) ← Назад"
+        echo ""
+        read -p "Выберите тему: " choice
+        
+        if [ "$choice" == "0" ] || [ -z "$choice" ]; then
+            return
+        fi
+        
+        if [ "$choice" -ge 1 ] && [ "$choice" -le ${#themes[@]} ]; then
+            local selected="${themes[$((choice-1))]}"
+            read -p "Удалить тему '$selected'? [y/N]: " confirm
+            if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+                sudo rm -rf "$GRUB_THEMES_DIR/$selected"
+                print_success "Тема удалена"
+            fi
+            read -p "Нажмите Enter..."
+        fi
+    fi
+}
+
+set_resolution_menu() {
+    print_header
+    
+    local current_res=$(grep "^GRUB_GFXMODE=" "$GRUB_CONFIG" 2>/dev/null | cut -d'=' -f2 | tr -d '"')
+    
+    if $USE_GUM; then
+        echo ""
+        gum style --foreground 212 --bold "🖥️ Настройка разрешения GRUB"
+        gum style --foreground 245 "Текущее: ${current_res:-auto}"
+        echo ""
+        
+        local resolutions=("1920x1080" "2560x1440" "1366x768" "1280x720" "3840x2160" "auto" "Ввести вручную...")
+        
+        local selected
+        selected=$(printf '%s\n' "${resolutions[@]}" | gum choose \
+            --cursor "▸ " \
+            --cursor.foreground 212)
+        
+        if [ -z "$selected" ]; then
+            return
+        fi
+        
+        local new_res="$selected"
+        if [ "$selected" == "Ввести вручную..." ]; then
+            new_res=$(gum input --placeholder "Введите разрешение (например, 1920x1080)")
+        fi
+        
+        if [ -n "$new_res" ]; then
+            sudo sed -i "s/^GRUB_GFXMODE=.*/GRUB_GFXMODE=$new_res/" "$GRUB_CONFIG"
+            if ! grep -q "^GRUB_GFXMODE=" "$GRUB_CONFIG"; then
+                echo "GRUB_GFXMODE=$new_res" | sudo tee -a "$GRUB_CONFIG" > /dev/null
+            fi
+            
+            gum spin --spinner dot --title "Обновление GRUB..." -- \
+                sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+            
+            print_success "Разрешение установлено: $new_res"
+            gum input --placeholder "Нажмите Enter..." > /dev/null
+        fi
+    else
+        echo -e "${BOLD}🖥️ Настройка разрешения GRUB:${NC}\n"
+        echo -e "Текущее разрешение: ${CYAN}${current_res:-auto}${NC}\n"
+        
+        echo -e "  ${CYAN}1${NC}) 1920x1080"
+        echo -e "  ${CYAN}2${NC}) 2560x1440"
+        echo -e "  ${CYAN}3${NC}) 1366x768"
+        echo -e "  ${CYAN}4${NC}) auto"
+        echo -e "\n  ${CYAN}0${NC}) ← Назад"
+        echo ""
+        read -p "Выберите: " choice
+        
+        local new_res=""
+        case $choice in
+            1) new_res="1920x1080" ;;
+            2) new_res="2560x1440" ;;
+            3) new_res="1366x768" ;;
+            4) new_res="auto" ;;
+            0) return ;;
+        esac
+        
+        if [ -n "$new_res" ]; then
+            sudo sed -i "s/^GRUB_GFXMODE=.*/GRUB_GFXMODE=$new_res/" "$GRUB_CONFIG"
+            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+            print_success "Разрешение установлено: $new_res"
+            read -p "Нажмите Enter..."
+        fi
+    fi
+}
+
+# ════════════════════════════════════════════════════════════════════════════
+# 🏠 Главное меню
+# ════════════════════════════════════════════════════════════════════════════
+
 main_menu() {
     while true; do
         print_header
         
         local current_theme=$(get_current_theme)
-        echo -e "${WHITE}Текущая тема: ${CYAN}$current_theme${NC}\n"
+        local installed_themes=($(get_installed_themes))
         
-        show_installed_themes
-        
-        echo -e "\n${BOLD}📋 Главное меню:${NC}"
-        echo -e "  ${CYAN}1${NC}) 🎨 Установить новую тему"
-        echo -e "  ${CYAN}2${NC}) ✅ Применить установленную тему"
-        echo -e "  ${CYAN}3${NC}) 🗑️  Удалить тему"
-        echo -e "  ${CYAN}4${NC}) 🖥️  Настроить разрешение"
-        echo -e "  ${CYAN}5${NC}) 🔄 Отключить двойное меню Minegrub"
-        echo -e "  ${CYAN}0${NC}) 🚪 Выход"
-        echo ""
-        read -p "Выберите действие: " action
-        
-        case $action in
-            1)
-                while true; do
-                    print_header
-                    show_categories
+        if $USE_GUM; then
+            # Статус
+            gum style --foreground 245 "Текущая тема: $(gum style --foreground 212 --bold "$current_theme")"
+            gum style --foreground 245 "Установлено тем: $(gum style --foreground 10 "${#installed_themes[@]}")"
+            echo ""
+            
+            # Меню
+            local options=(
+                "🎨 Установить новую тему"
+                "✅ Применить установленную тему"
+                "🗑️  Удалить тему"
+                "🖥️  Настроить разрешение"
+                "🔄 Отключить двойное меню Minegrub"
+                "🚪 Выход"
+            )
+            
+            local selected
+            selected=$(printf '%s\n' "${options[@]}" | gum choose \
+                --cursor "▸ " \
+                --cursor.foreground 212 \
+                --selected.foreground 212 \
+                --height 8)
+            
+            case "$selected" in
+                "🎨 Установить новую тему") select_theme_to_install ;;
+                "✅ Применить установленную тему") select_installed_theme ;;
+                "🗑️  Удалить тему") remove_theme_menu ;;
+                "🖥️  Настроить разрешение") set_resolution_menu ;;
+                "🔄 Отключить двойное меню Minegrub")
+                    sudo grub-editenv - unset config_file 2>/dev/null || true
+                    print_success "Двойное меню отключено"
+                    sleep 1
+                    ;;
+                "🚪 Выход")
                     echo ""
-                    read -p "Выберите категорию: " cat_choice
-                    
-                    case $cat_choice in
-                        0) break ;;
-                        [1-6]) show_themes_by_category "$cat_choice" ;;
-                        *) print_error "Неверный выбор"; sleep 1 ;;
-                    esac
-                done
-                ;;
-            2) apply_installed_theme ;;
-            3) remove_theme ;;
-            4) set_resolution ;;
-            5) disable_double_menu ;;
-            0) 
-                echo -e "\n${GREEN}До свидания! 👋${NC}\n"
-                exit 0 
-                ;;
-            *) 
-                print_error "Неверный выбор"
-                sleep 1
-                ;;
-        esac
+                    gum style --foreground 10 "До свидания! 👋"
+                    exit 0
+                    ;;
+            esac
+        else
+            # Fallback без gum
+            echo -e "${WHITE}Текущая тема: ${CYAN}$current_theme${NC}"
+            echo -e "${WHITE}Установлено тем: ${GREEN}${#installed_themes[@]}${NC}\n"
+            
+            echo -e "${BOLD}📋 Главное меню:${NC}"
+            echo -e "  ${CYAN}1${NC}) 🎨 Установить новую тему"
+            echo -e "  ${CYAN}2${NC}) ✅ Применить установленную тему"
+            echo -e "  ${CYAN}3${NC}) 🗑️  Удалить тему"
+            echo -e "  ${CYAN}4${NC}) 🖥️  Настроить разрешение"
+            echo -e "  ${CYAN}5${NC}) 🔄 Отключить двойное меню Minegrub"
+            echo -e "  ${CYAN}0${NC}) 🚪 Выход"
+            echo ""
+            read -p "Выберите действие: " action
+            
+            case $action in
+                1) select_theme_to_install ;;
+                2) select_installed_theme ;;
+                3) remove_theme_menu ;;
+                4) set_resolution_menu ;;
+                5)
+                    sudo grub-editenv - unset config_file 2>/dev/null || true
+                    print_success "Двойное меню отключено"
+                    sleep 1
+                    ;;
+                0)
+                    echo -e "\n${GREEN}До свидания! 👋${NC}\n"
+                    exit 0
+                    ;;
+            esac
+        fi
     done
 }
 
-# Показать помощь
+# ════════════════════════════════════════════════════════════════════════════
+# 📖 CLI режим
+# ════════════════════════════════════════════════════════════════════════════
+
 show_help() {
     echo -e "${BOLD}🎨 Gorgeous GRUB Installer${NC}"
     echo ""
     echo "Использование:"
     echo "  ./gorgeous-grub.sh              Интерактивный режим"
-    echo "  ./gorgeous-grub.sh --list       Показать все доступные темы"
-    echo "  ./gorgeous-grub.sh --search QUERY   Поиск темы по названию"
-    echo "  ./gorgeous-grub.sh --install NAME   Установить тему по имени"
-    echo "  ./gorgeous-grub.sh --help       Показать эту справку"
-    echo ""
-    echo "Примеры:"
-    echo "  ./gorgeous-grub.sh --list"
-    echo "  ./gorgeous-grub.sh --search doom"
-    echo "  ./gorgeous-grub.sh --install Grubphemous"
+    echo "  ./gorgeous-grub.sh --list       Показать все темы"
+    echo "  ./gorgeous-grub.sh --search Q   Поиск темы"
+    echo "  ./gorgeous-grub.sh --install N  Установить тему"
+    echo "  ./gorgeous-grub.sh --help       Эта справка"
     echo ""
 }
 
-# Показать все темы (для неинтерактивного режима)
 list_all_themes() {
-    echo -e "${BOLD}🎨 Доступные темы для установки:${NC}\n"
+    echo -e "${BOLD}🎨 Доступные темы:${NC}\n"
     
     local idx=1
     for theme_data in "${THEMES[@]}"; do
-        IFS='|' read -r name url type folder desc <<< "$theme_data"
-        printf "  ${CYAN}%2d${NC}) %-25s ${WHITE}%s${NC}\n" "$idx" "$name" "$desc"
+        IFS='|' read -r name url type folder desc category <<< "$theme_data"
+        printf "  ${CYAN}%2d${NC}) %-22s ${WHITE}%-30s${NC} ${PURPLE}%s${NC}\n" "$idx" "$name" "$desc" "$category"
         ((idx++))
     done
     
     echo ""
-    echo -e "${BOLD}💡 Для установки используйте:${NC}"
-    echo "  ./gorgeous-grub.sh --install \"Название темы\""
+    echo -e "💡 Используйте: ${CYAN}./gorgeous-grub.sh --install \"Название\"${NC}"
 }
 
-# Поиск темы
 search_theme() {
     local query=$1
     echo -e "${BOLD}🔍 Поиск: $query${NC}\n"
@@ -750,43 +839,24 @@ search_theme() {
     local found=0
     local idx=1
     for theme_data in "${THEMES[@]}"; do
-        IFS='|' read -r name url type folder desc <<< "$theme_data"
-        if echo "$name $desc" | grep -iq "$query"; then
-            printf "  ${CYAN}%2d${NC}) %-25s ${WHITE}%s${NC}\n" "$idx" "$name" "$desc"
+        IFS='|' read -r name url type folder desc category <<< "$theme_data"
+        if echo "$name $desc $category" | grep -iq "$query"; then
+            printf "  ${CYAN}%2d${NC}) %-22s ${WHITE}%s${NC}\n" "$idx" "$name" "$desc"
             found=1
         fi
         ((idx++))
     done
     
-    if [ $found -eq 0 ]; then
-        echo -e "  ${YELLOW}Ничего не найдено${NC}"
-    fi
-    
-    echo ""
-    echo -e "${BOLD}💡 Для установки используйте:${NC}"
-    echo "  ./gorgeous-grub.sh --install \"Название темы\""
+    [ $found -eq 0 ] && echo -e "  ${YELLOW}Ничего не найдено${NC}"
 }
 
-# Установка по имени
 install_by_name() {
     local query=$1
     
     local idx=0
     for theme_data in "${THEMES[@]}"; do
-        IFS='|' read -r name url type folder desc <<< "$theme_data"
-        if echo "$name" | grep -iq "^$query$"; then
-            print_info "Найдена тема: $name"
-            install_theme $idx
-            return 0
-        fi
-        ((idx++))
-    done
-    
-    # Нечёткий поиск
-    idx=0
-    for theme_data in "${THEMES[@]}"; do
-        IFS='|' read -r name url type folder desc <<< "$theme_data"
-        if echo "$name" | grep -iq "$query"; then
+        IFS='|' read -r name url type folder desc category <<< "$theme_data"
+        if echo "$name" | grep -iq "^$query$" || echo "$name" | grep -iq "$query"; then
             print_info "Найдена тема: $name"
             install_theme $idx
             return 0
@@ -795,47 +865,26 @@ install_by_name() {
     done
     
     print_error "Тема '$query' не найдена"
-    echo "Используйте --list для просмотра доступных тем"
+    echo "Используйте --list для просмотра тем"
     exit 1
 }
 
-# Точка входа
+# ════════════════════════════════════════════════════════════════════════════
+# 🚀 Точка входа
+# ════════════════════════════════════════════════════════════════════════════
+
 check_dependencies
 detect_grub
 
-# Обработка аргументов командной строки
 case "${1:-}" in
-    --help|-h)
-        show_help
-        exit 0
-        ;;
-    --list|-l)
-        list_all_themes
-        exit 0
-        ;;
+    --help|-h) show_help; exit 0 ;;
+    --list|-l) list_all_themes; exit 0 ;;
     --search|-s)
-        if [ -z "${2:-}" ]; then
-            print_error "Укажите запрос для поиска"
-            exit 1
-        fi
-        search_theme "$2"
-        exit 0
-        ;;
+        [ -z "${2:-}" ] && { print_error "Укажите запрос"; exit 1; }
+        search_theme "$2"; exit 0 ;;
     --install|-i)
-        if [ -z "${2:-}" ]; then
-            print_error "Укажите название темы"
-            exit 1
-        fi
-        install_by_name "$2"
-        exit 0
-        ;;
-    "")
-        # Интерактивный режим
-        main_menu
-        ;;
-    *)
-        print_error "Неизвестный аргумент: $1"
-        show_help
-        exit 1
-        ;;
+        [ -z "${2:-}" ] && { print_error "Укажите название темы"; exit 1; }
+        install_by_name "$2"; exit 0 ;;
+    "") main_menu ;;
+    *) print_error "Неизвестный аргумент: $1"; show_help; exit 1 ;;
 esac
