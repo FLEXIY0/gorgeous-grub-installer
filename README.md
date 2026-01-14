@@ -8,49 +8,53 @@
 </p>
 
 <p align="center">
-  <b>Красивый интерактивный установщик тем GRUB</b><br>
-  Навигация стрелками • Поиск • Анимации • 45+ тем
+  <b>Beautiful interactive GRUB theme installer</b><br>
+  Arrow navigation • Search • Animations • 45+ themes
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> | <a href="README.ru.md">Русский</a>
 </p>
 
 ---
 
-## Особенности
+## Features
 
-- **Интерактивный интерфейс** — навигация стрелками, поиск в реальном времени
-- **45+ тем** — от игровых до минималистичных
-- **Быстрая установка** — одной командой из GitHub
-- **Умный поиск** — по названию или описанию
-- **Управление** — установка, применение, удаление тем
-- **Настройка разрешения** — легко изменить разрешение GRUB
+- **Interactive UI** — arrow key navigation, real-time search
+- **45+ themes** — from gaming to minimalist
+- **Quick install** — one command from GitHub
+- **Smart search** — by name or description
+- **Management** — install, apply, remove themes
+- **Resolution settings** — easily change GRUB resolution
 
-## Демонстрация
+## Demo
 
 ```
 ╭───────────────────────────────────────────────────╮
 │           Gorgeous GRUB Installer                 │
 │                                                   │
-│      Красивые темы для вашего загрузчика          │
+│       Beautiful themes for your bootloader        │
 ╰───────────────────────────────────────────────────╯
 
-Текущая тема: grubphemous
-Установлено тем: 4
+Current theme: grubphemous
+Installed themes: 4
 
-▸ Установить новую тему
-  Применить установленную тему
-  Удалить тему
-  Настроить разрешение
-  Выход
+▸ Install new theme
+  Apply installed theme
+  Remove theme
+  Set resolution
+  Exit
 ```
 
-## Установка
+## Installation
 
-### Требования
+### Requirements
 
-- Linux с GRUB/GRUB2
+- Linux with GRUB/GRUB2
 - `git`, `sudo`
-- `gum` (опционально, для красивого UI)
+- `gum` (optional, for beautiful UI)
 
-### Установка gum
+### Install gum
 
 ```bash
 # Arch Linux
@@ -66,13 +70,13 @@ sudo apt update && sudo apt install gum
 sudo dnf install gum
 ```
 
-### Быстрый запуск (одна команда)
+### Quick start (one command)
 
 ```bash
 curl -sL https://raw.githubusercontent.com/FLEXIY0/gorgeous-grub-installer/master/gorgeous-grub.sh | bash
 ```
 
-### Полная установка
+### Full installation
 
 ```bash
 git clone https://github.com/FLEXIY0/gorgeous-grub-installer.git
@@ -80,40 +84,40 @@ cd gorgeous-grub-installer
 ./gorgeous-grub.sh
 ```
 
-## Использование
+## Usage
 
-### Интерактивный режим
+### Interactive mode
 
 ```bash
 ./gorgeous-grub.sh
 ```
 
-Используйте **↑↓** для навигации, **Enter** для выбора.
+Use **↑↓** to navigate, **Enter** to select.
 
-### Командная строка
+### Command line
 
 ```bash
-# Показать все темы
+# List all themes
 ./gorgeous-grub.sh --list
 
-# Поиск темы
+# Search theme
 ./gorgeous-grub.sh --search doom
 
-# Установить тему
+# Install theme
 ./gorgeous-grub.sh --install "Grubphemous"
 ```
 
-## Категории тем
+## Theme Categories
 
-| Категория | Примеры |
-|-----------|---------|
-| Игровые | Minegrub, DOOM, Dark Souls, Hollow Knight, Celeste |
-| Киберпанк | Cyberpunk 2077, CRT-Amber, Matrix, Virtuaverse |
-| Аниме | YoRHa, Persona 5, Genshin Impact |
-| Минимализм | Catppuccin, Sleek, HyperFluent, Elegant |
+| Category | Examples |
+|----------|----------|
+| Gaming | Minegrub, DOOM, Dark Souls, Hollow Knight, Celeste |
+| Cyberpunk | Cyberpunk 2077, CRT-Amber, Matrix, Virtuaverse |
+| Anime | YoRHa, Persona 5, Genshin Impact |
+| Minimal | Catppuccin, Sleek, HyperFluent, Elegant |
 | Sci-Fi | Space Isolation, SteamOS, Descent |
 
-## Превью
+## Preview
 
 | Grubphemous | Minegrub |
 |:-----------:|:--------:|
@@ -123,25 +127,25 @@ cd gorgeous-grub-installer
 |:----------:|:----:|
 | ![Catppuccin](https://raw.githubusercontent.com/Jacksaur/Gorgeous-GRUB/main/Images/Catppuccin.png) | ![DOOM](https://raw.githubusercontent.com/Jacksaur/Gorgeous-GRUB/main/Images/DOOM.png) |
 
-## Как это работает
+## How it works
 
-1. Выберите тему из списка
-2. Скрипт автоматически клонирует репозиторий
-3. Тема копируется в `/boot/grub/themes/`
-4. Конфигурация GRUB обновляется
-5. Перезагрузитесь и наслаждайтесь
+1. Select theme from list
+2. Script automatically clones repository
+3. Theme is copied to `/boot/grub/themes/`
+4. GRUB config is updated
+5. Reboot and enjoy
 
-## Лицензия
+## License
 
-MIT License — см. [LICENSE](LICENSE)
+MIT License — see [LICENSE](LICENSE)
 
-## Благодарности
+## Credits
 
-- [Jacksaur/Gorgeous-GRUB](https://github.com/Jacksaur/Gorgeous-GRUB) — коллекция тем
-- [Charm](https://charm.sh/) — инструмент Gum
+- [Jacksaur/Gorgeous-GRUB](https://github.com/Jacksaur/Gorgeous-GRUB) — theme collection
+- [Charm](https://charm.sh/) — Gum tool
 
 ---
 
 <p align="center">
-  Если проект понравился — поставьте ⭐
+  If you like this project — give it a ⭐
 </p>
