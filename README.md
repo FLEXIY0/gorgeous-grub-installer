@@ -1,7 +1,7 @@
 # Gorgeous GRUB Installer
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/YOUR_USERNAME/gorgeous-grub-installer?style=for-the-badge&color=yellow" alt="Stars">
+  <img src="https://img.shields.io/github/stars/FLEXIY0/gorgeous-grub-installer?style=for-the-badge&color=yellow" alt="Stars">
   <img src="https://img.shields.io/badge/Shell-Bash-green?style=for-the-badge&logo=gnu-bash" alt="Bash">
   <img src="https://img.shields.io/badge/Themes-45+-purple?style=for-the-badge" alt="Themes">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
@@ -69,7 +69,7 @@ sudo dnf install gum
 ### Запуск
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/gorgeous-grub-installer.git
+git clone https://github.com/FLEXIY0/gorgeous-grub-installer.git
 cd gorgeous-grub-installer
 ./gorgeous-grub.sh
 ```
