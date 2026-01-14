@@ -6,7 +6,7 @@
 # ║                    https://github.com/Jacksaur/Gorgeous-GRUB             ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-set -e
+# set -e  # Отключено для корректной работы с grep
 
 # Цвета
 RED='\033[0;31m'
@@ -708,7 +708,134 @@ main_menu() {
     done
 }
 
+# Показать помощь
+show_help() {
+    echo -e "${BOLD}🎨 Gorgeous GRUB Installer${NC}"
+    echo ""
+    echo "Использование:"
+    echo "  ./gorgeous-grub.sh              Интерактивный режим"
+    echo "  ./gorgeous-grub.sh --list       Показать все доступные темы"
+    echo "  ./gorgeous-grub.sh --search QUERY   Поиск темы по названию"
+    echo "  ./gorgeous-grub.sh --install NAME   Установить тему по имени"
+    echo "  ./gorgeous-grub.sh --help       Показать эту справку"
+    echo ""
+    echo "Примеры:"
+    echo "  ./gorgeous-grub.sh --list"
+    echo "  ./gorgeous-grub.sh --search doom"
+    echo "  ./gorgeous-grub.sh --install Grubphemous"
+    echo ""
+}
+
+# Показать все темы (для неинтерактивного режима)
+list_all_themes() {
+    echo -e "${BOLD}🎨 Доступные темы для установки:${NC}\n"
+    
+    local idx=1
+    for theme_data in "${THEMES[@]}"; do
+        IFS='|' read -r name url type folder desc <<< "$theme_data"
+        printf "  ${CYAN}%2d${NC}) %-25s ${WHITE}%s${NC}\n" "$idx" "$name" "$desc"
+        ((idx++))
+    done
+    
+    echo ""
+    echo -e "${BOLD}💡 Для установки используйте:${NC}"
+    echo "  ./gorgeous-grub.sh --install \"Название темы\""
+}
+
+# Поиск темы
+search_theme() {
+    local query=$1
+    echo -e "${BOLD}🔍 Поиск: $query${NC}\n"
+    
+    local found=0
+    local idx=1
+    for theme_data in "${THEMES[@]}"; do
+        IFS='|' read -r name url type folder desc <<< "$theme_data"
+        if echo "$name $desc" | grep -iq "$query"; then
+            printf "  ${CYAN}%2d${NC}) %-25s ${WHITE}%s${NC}\n" "$idx" "$name" "$desc"
+            found=1
+        fi
+        ((idx++))
+    done
+    
+    if [ $found -eq 0 ]; then
+        echo -e "  ${YELLOW}Ничего не найдено${NC}"
+    fi
+    
+    echo ""
+    echo -e "${BOLD}💡 Для установки используйте:${NC}"
+    echo "  ./gorgeous-grub.sh --install \"Название темы\""
+}
+
+# Установка по имени
+install_by_name() {
+    local query=$1
+    
+    local idx=0
+    for theme_data in "${THEMES[@]}"; do
+        IFS='|' read -r name url type folder desc <<< "$theme_data"
+        if echo "$name" | grep -iq "^$query$"; then
+            print_info "Найдена тема: $name"
+            install_theme $idx
+            return 0
+        fi
+        ((idx++))
+    done
+    
+    # Нечёткий поиск
+    idx=0
+    for theme_data in "${THEMES[@]}"; do
+        IFS='|' read -r name url type folder desc <<< "$theme_data"
+        if echo "$name" | grep -iq "$query"; then
+            print_info "Найдена тема: $name"
+            install_theme $idx
+            return 0
+        fi
+        ((idx++))
+    done
+    
+    print_error "Тема '$query' не найдена"
+    echo "Используйте --list для просмотра доступных тем"
+    exit 1
+}
+
 # Точка входа
 check_dependencies
 detect_grub
-main_menu
+
+# Обработка аргументов командной строки
+case "${1:-}" in
+    --help|-h)
+        show_help
+        exit 0
+        ;;
+    --list|-l)
+        list_all_themes
+        exit 0
+        ;;
+    --search|-s)
+        if [ -z "${2:-}" ]; then
+            print_error "Укажите запрос для поиска"
+            exit 1
+        fi
+        search_theme "$2"
+        exit 0
+        ;;
+    --install|-i)
+        if [ -z "${2:-}" ]; then
+            print_error "Укажите название темы"
+            exit 1
+        fi
+        install_by_name "$2"
+        exit 0
+        ;;
+    "")
+        # Интерактивный режим
+        main_menu
+        ;;
+    *)
+        print_error "Неизвестный аргумент: $1"
+        show_help
+        exit 1
+        ;;
+esac
