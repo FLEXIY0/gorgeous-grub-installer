@@ -69,7 +69,7 @@ sudo dnf install gum
 ### Быстрый запуск (одна команда)
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/FLEXIY0/gorgeous-grub-installer/master/gorgeous-grub.sh)
+curl -sL https://raw.githubusercontent.com/FLEXIY0/gorgeous-grub-installer/master/gorgeous-grub.sh | bash
 ```
 
 ### Полная установка
