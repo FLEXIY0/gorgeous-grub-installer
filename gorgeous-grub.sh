@@ -524,10 +524,12 @@ fix_theme_fonts() {
         
         local font_path="${FONT_OPTIONS[$selected]}"
         
-        gum spin --spinner dot --title "Creating fonts..." -- bash -c "
-            sudo grub-mkfont -n '$selected' -s 20 -o '$theme_dir/unicode-20.pf2' '$font_path'
-            sudo grub-mkfont -n '$selected' -s 30 -o '$theme_dir/unicode-30.pf2' '$font_path'
-        "
+        # Request sudo upfront
+        sudo -v
+        
+        print_info "Creating fonts..."
+        sudo grub-mkfont -n "$selected" -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path" 2>/dev/null
+        sudo grub-mkfont -n "$selected" -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path" 2>/dev/null
         
         # Get original font names from theme.txt
         local orig_font_20=$(grep -oP 'font = "\K[^"]+' "$current_theme_path" | grep -E '(18|20|22)' | head -1)
