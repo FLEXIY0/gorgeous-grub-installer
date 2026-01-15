@@ -418,11 +418,12 @@ reset_to_default() {
      
     # Regenerate GRUB config
     print_info "${L[updating_grub]}"
-    if $USE_GUM; then
-        gum spin --spinner dot --title "${L[updating_grub]}" -- \
-            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
-    else
-        sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+    
+    # We run this directly without gum spin and without hiding errors (2>/dev/null)
+    # so the user can see if something goes wrong (e.g. missing paths)
+    if ! sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg; then
+        print_error "Failed to update GRUB config"
+        # We don't exit here, to let the user see the error
     fi
     
     print_success "${L[reset_complete]}"
@@ -940,8 +941,25 @@ install_pling_theme() {
     fi
 }
 
+sanitize_theme_paths() {
+    local theme_dir=$1
+    local theme_file="$theme_dir/theme.txt"
+    
+    if [ -f "$theme_file" ]; then
+        # print_info "Sanitizing theme paths..."
+        # Remove absolute paths starting with /boot/grub/themes/NAME/ or /grub/themes/NAME/
+        # leaving only the filename/relative path
+        sudo sed -i -E 's|/boot/grub/themes/[^/]+/||g' "$theme_file"
+        sudo sed -i -E 's|/grub/themes/[^/]+/||g' "$theme_file"
+    fi
+}
+
 apply_theme() {
     local theme_path=$1
+    local theme_dir=$(dirname "$theme_path")
+    
+    # Sanitize paths before applying
+    sanitize_theme_paths "$theme_dir"
     
     print_info "${L[applying]}"
     
