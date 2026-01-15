@@ -480,6 +480,12 @@ fix_theme_fonts() {
     local theme_dir=$(dirname "$current_theme_path")
     local theme_name=$(basename "$theme_dir")
     
+    # Get currently used font from theme.txt
+    local current_font_raw=$(grep -E "^(\s+)?font =" "$current_theme_path" | head -1 | cut -d'"' -f2)
+    # Remove size suffix (e.g., "DejaVu Sans Regular 30" -> "DejaVu Sans Regular")
+    local current_font_display=$(echo "$current_font_raw" | sed 's/ [0-9]*$//')
+    [ -z "$current_font_display" ] && current_font_display="Unknown"
+    
     # Find all TTF/OTF fonts in system
     declare -A FONT_PATHS
     local font_names=()
@@ -501,7 +507,7 @@ fix_theme_fonts() {
         sleep 2
         return
     fi
-    
+     
     local selected=""
     local font_path=""
     
@@ -509,6 +515,7 @@ fix_theme_fonts() {
         echo ""
         gum style --foreground 212 --bold "🔤 ${L[fix_fonts]}"
         gum style --foreground 245 "Theme: $theme_name"
+        gum style --foreground 245 "Current font: $current_font_display"
         echo ""
         
         selected=$(printf '%s\n' "${font_names[@]}" | gum filter \
@@ -521,7 +528,8 @@ fix_theme_fonts() {
         font_path="${FONT_PATHS[$selected]}"
     else
         echo -e "${BOLD}🔤 ${L[fix_fonts]}:${NC}\n"
-        echo -e "Theme: ${CYAN}$theme_name${NC}\n"
+        echo -e "Theme: ${CYAN}$theme_name${NC}"
+        echo -e "Current font: ${CYAN}$current_font_display${NC}\n"
         echo -e "Enter font name to search (or number from list):\n"
         
         # Show first 20 fonts
