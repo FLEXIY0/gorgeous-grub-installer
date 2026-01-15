@@ -47,6 +47,7 @@ load_english() {
     L[remove_theme]="Remove theme"
     L[set_resolution]="Set resolution"
     L[disable_double]="Disable Minegrub double menu"
+    L[reset_default]="Reset to default settings"
     L[exit]="Exit"
     L[goodbye]="Goodbye!"
     L[select_theme]="Select theme to install"
@@ -117,6 +118,7 @@ load_russian() {
     L[remove_theme]="Удалить тему"
     L[set_resolution]="Настроить разрешение"
     L[disable_double]="Отключить двойное меню Minegrub"
+    L[reset_default]="Сбросить настройки по умолчанию"
     L[exit]="Выход"
     L[goodbye]="До свидания!"
     L[select_theme]="Выберите тему для установки"
@@ -149,8 +151,9 @@ load_russian() {
     L[resolution_title]="Настройка разрешения GRUB"
     L[current_resolution]="Текущее разрешение"
     L[enter_manually]="Ввести вручную..."
-    L[resolution_set]="Разрешение установлено"
-    L[double_disabled]="Двойное меню отключено"
+    L[resolution_set]="Resolution set"
+    L[reset_complete]="Settings reset to default"
+    L[double_disabled]="Double menu disabled"
     L[grub_lang]="Язык GRUB"
     L[grub_lang_set]="Язык GRUB изменён на"
     L[grub_lang_note]="Примечание: Некоторые темы не поддерживают кириллицу"
@@ -381,6 +384,43 @@ cleanup_double_menu() {
     fi
     
     print_success "${L[double_disabled]}"
+    
+    if $USE_GUM; then
+        gum input --placeholder "${L[press_enter]}" > /dev/null
+    else
+        read -p "${L[press_enter]}"
+    fi
+    fi
+}
+
+reset_to_default() {
+    print_header
+    print_info "Resetting to default settings..." 
+    
+    # Remove theme
+    sudo sed -i '/^GRUB_THEME=/d' "$GRUB_CONFIG"
+    
+    # Remove custom font settings if any (though usually inside theme)
+    # Also remove custom resolution if we want to be thorough? 
+    # Let's keep resolution as it might be needed for the monitor. 
+    # Just removing the theme is usually what "reset" visual means.
+    
+    # Enable menu timeout style (default)
+    if grep -q "^GRUB_TIMEOUT_STYLE=hidden" "$GRUB_CONFIG"; then
+         sudo sed -i 's/^GRUB_TIMEOUT_STYLE=hidden/GRUB_TIMEOUT_STYLE=menu/' "$GRUB_CONFIG"
+    fi
+     
+    # Regenerate GRUB config
+    print_info "${L[updating_grub]}"
+    if $USE_GUM; then
+        gum spin --spinner dot --title "${L[updating_grub]}" -- \
+            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+    else
+        sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+    fi
+    
+    print_success "${L[reset_complete]}"
+    print_info "${L[reboot_msg]}"
     
     if $USE_GUM; then
         gum input --placeholder "${L[press_enter]}" > /dev/null
@@ -745,9 +785,9 @@ install_github_script_theme() {
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo 2>/dev/null
+            git clone --depth 1 "$url.git" repo
     else
-        git clone --depth 1 "$url.git" repo 2>/dev/null
+        git clone --depth 1 "$url.git" repo
     fi
     
     if [ $? -ne 0 ]; then
@@ -775,9 +815,9 @@ install_github_with_installer() {
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo 2>/dev/null
+            git clone --depth 1 "$url.git" repo
     else
-        git clone --depth 1 "$url.git" repo 2>/dev/null
+        git clone --depth 1 "$url.git" repo
     fi
     
     if [ $? -ne 0 ]; then
@@ -806,9 +846,9 @@ install_github_subfolder_theme() {
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo 2>/dev/null
+            git clone --depth 1 "$url.git" repo
     else
-        git clone --depth 1 "$url.git" repo 2>/dev/null
+        git clone --depth 1 "$url.git" repo
     fi
     
     if [ $? -ne 0 ]; then
@@ -841,9 +881,9 @@ install_gitlab_theme() {
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo 2>/dev/null
+            git clone --depth 1 "$url.git" repo
     else
-        git clone --depth 1 "$url.git" repo 2>/dev/null
+        git clone --depth 1 "$url.git" repo
     fi
     
     if [ $? -ne 0 ]; then
@@ -943,7 +983,9 @@ install_theme() {
     
     echo ""
     
-    rm -rf "$TEMP_DIR"
+    echo ""
+    
+    sudo rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
     cd "$TEMP_DIR"
     
@@ -1237,6 +1279,7 @@ main_menu() {
                 "🔤 ${L[fix_fonts]}"
                 "🌐 ${L[grub_lang]}"
                 "🔄 ${L[disable_double]}"
+                "🔙 ${L[reset_default]}"
                 "🌍 ${L[change_language]}"
                 "🚪 ${L[exit]}"
             )
@@ -1255,7 +1298,9 @@ main_menu() {
                 "🖥️  ${L[set_resolution]}") set_resolution_menu ;;
                 "🔤 ${L[fix_fonts]}") fix_theme_fonts ;;
                 "🌐 ${L[grub_lang]}") set_grub_language ;;
+                "🌐 ${L[grub_lang]}") set_grub_language ;;
                 "🔄 ${L[disable_double]}") cleanup_double_menu ;;
+                "🔙 ${L[reset_default]}") reset_to_default ;;
                 "🌍 ${L[change_language]}") select_language ;;
                 "🚪 ${L[exit]}")
                     echo ""
@@ -1275,7 +1320,8 @@ main_menu() {
             echo -e "  ${CYAN}5${NC}) 🔤 ${L[fix_fonts]}"
             echo -e "  ${CYAN}6${NC}) 🌐 ${L[grub_lang]}"
             echo -e "  ${CYAN}7${NC}) 🔄 ${L[disable_double]}"
-            echo -e "  ${CYAN}8${NC}) 🌍 ${L[change_language]}"
+            echo -e "  ${CYAN}8${NC}) 🔙 ${L[reset_default]}"
+            echo -e "  ${CYAN}9${NC}) 🌍 ${L[change_language]}"
             echo -e "  ${CYAN}0${NC}) 🚪 ${L[exit]}"
             echo ""
             read -p "> " action
@@ -1288,7 +1334,8 @@ main_menu() {
                 5) fix_theme_fonts ;;
                 6) set_grub_language ;;
                 7) cleanup_double_menu ;;
-                8) select_language ;;
+                8) reset_to_default ;;
+                9) select_language ;;
                 0)
                     echo -e "\n${GREEN}${L[goodbye]} 👋${NC}\n"
                     exit 0
