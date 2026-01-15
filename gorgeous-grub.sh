@@ -45,6 +45,7 @@ load_english() {
     L[install_new]="Install new theme"
     L[apply_installed]="Apply installed theme"
     L[remove_theme]="Remove theme"
+    L[reboot]="Reboot system"
     L[set_resolution]="Set resolution"
     L[disable_double]="Disable Minegrub double menu"
     L[reset_default]="Reset to default settings"
@@ -116,6 +117,7 @@ load_russian() {
     L[install_new]="Установить новую тему"
     L[apply_installed]="Применить установленную тему"
     L[remove_theme]="Удалить тему"
+    L[reboot]="Перезагрузить систему"
     L[set_resolution]="Настроить разрешение"
     L[disable_double]="Отключить двойное меню Minegrub"
     L[reset_default]="Сбросить настройки по умолчанию"
@@ -941,6 +943,21 @@ install_pling_theme() {
     fi
 }
 
+reboot_system() {
+    print_header
+    
+    if $USE_GUM; then
+        if gum confirm "${L[reboot]}?"; then
+             sudo reboot
+        fi
+    else
+        read -p "${L[reboot]}? [y/N]: " confirm
+        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+            sudo reboot
+        fi
+    fi
+}
+
 sanitize_theme_paths() {
     local theme_dir=$1
     local theme_file="$theme_dir/theme.txt"
@@ -1298,6 +1315,7 @@ main_menu() {
             local options=(
                 "🎨 ${L[install_new]}"
                 "✅ ${L[apply_installed]}"
+                "🔄 ${L[reboot]}"
                 "🗑️  ${L[remove_theme]}"
                 "🖥️  ${L[set_resolution]}"
                 "🔤 ${L[fix_fonts]}"
@@ -1318,6 +1336,7 @@ main_menu() {
             case "$selected" in
                 "🎨 ${L[install_new]}") select_theme_to_install ;;
                 "✅ ${L[apply_installed]}") select_installed_theme ;;
+                "🔄 ${L[reboot]}") reboot_system ;;
                 "🗑️  ${L[remove_theme]}") remove_theme_menu ;;
                 "🖥️  ${L[set_resolution]}") set_resolution_menu ;;
                 "🔤 ${L[fix_fonts]}") fix_theme_fonts ;;
@@ -1340,6 +1359,7 @@ main_menu() {
             echo -e "  ${CYAN}1${NC}) 🎨 ${L[install_new]}"
             echo -e "  ${CYAN}2${NC}) ✅ ${L[apply_installed]}"
             echo -e "  ${CYAN}3${NC}) 🗑️  ${L[remove_theme]}"
+            echo -e "  ${CYAN}r${NC}) 🔄 ${L[reboot]}"
             echo -e "  ${CYAN}4${NC}) 🖥️  ${L[set_resolution]}"
             echo -e "  ${CYAN}5${NC}) 🔤 ${L[fix_fonts]}"
             echo -e "  ${CYAN}6${NC}) 🌐 ${L[grub_lang]}"
@@ -1353,6 +1373,7 @@ main_menu() {
             case $action in
                 1) select_theme_to_install ;;
                 2) select_installed_theme ;;
+                r) reboot_system ;;
                 3) remove_theme_menu ;;
                 4) set_resolution_menu ;;
                 5) fix_theme_fonts ;;
