@@ -480,29 +480,29 @@ fix_theme_fonts() {
     local theme_dir=$(dirname "$current_theme_path")
     local theme_name=$(basename "$theme_dir")
     
-    # Available fonts with Cyrillic support
+    # Find all TTF fonts in system using fc-list
     declare -A FONT_OPTIONS
-    FONT_OPTIONS["DejaVu Sans"]="/usr/share/fonts/TTF/DejaVuSans.ttf"
-    FONT_OPTIONS["DejaVu Sans Bold"]="/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
-    FONT_OPTIONS["Liberation Sans"]="/usr/share/fonts/TTF/LiberationSans-Regular.ttf"
-    FONT_OPTIONS["Liberation Mono"]="/usr/share/fonts/TTF/LiberationMono-Regular.ttf"
-    
-    # Find available fonts
     local available_fonts=()
-    for font_name in "${!FONT_OPTIONS[@]}"; do
-        if [ -f "${FONT_OPTIONS[$font_name]}" ]; then
-            available_fonts+=("$font_name")
-        fi
-    done
     
-    # Add Noto if available
-    if ls /usr/share/fonts/noto/NotoSans-Regular.ttf 2>/dev/null; then
-        available_fonts+=("Noto Sans")
-        FONT_OPTIONS["Noto Sans"]="/usr/share/fonts/noto/NotoSans-Regular.ttf"
-    fi
+    while IFS=: read -r path name style; do
+        # Clean up font name
+        name=$(echo "$name" | sed 's/^ *//' | cut -d',' -f1)
+        
+        # Skip empty names
+        [ -z "$name" ] && continue
+        
+        # Only include TTF/OTF files
+        [[ "$path" == *.ttf || "$path" == *.otf ]] || continue
+        
+        # Skip duplicates
+        [[ -v "FONT_OPTIONS[$name]" ]] && continue
+        
+        FONT_OPTIONS["$name"]="$path"
+        available_fonts+=("$name")
+    done < <(fc-list --format="%{file}:%{family}:%{style}\n" 2>/dev/null | sort -t: -k2 -u | head -50)
     
     if [ ${#available_fonts[@]} -eq 0 ]; then
-        print_error "No suitable fonts found"
+        print_error "No fonts found"
         sleep 2
         return
     fi
