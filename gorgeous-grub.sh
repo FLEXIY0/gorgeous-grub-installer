@@ -531,27 +531,23 @@ fix_theme_fonts() {
         sudo grub-mkfont -n "$selected" -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path" 2>/dev/null
         sudo grub-mkfont -n "$selected" -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path" 2>/dev/null
         
-        # Get original font names from theme.txt
-        local orig_font_20=$(grep -oP 'font = "\K[^"]+' "$current_theme_path" | grep -E '(18|20|22)' | head -1)
-        local orig_font_30=$(grep -oP 'font = "\K[^"]+' "$current_theme_path" | grep -E '(28|30|32)' | head -1)
-        local orig_item_font=$(grep -oP 'item_font = "\K[^"]+' "$current_theme_path" | head -1)
-        
-        # Replace fonts in theme.txt
-        if [ -n "$orig_font_20" ]; then
-            sudo sed -i "s|$orig_font_20|$selected 20|g" "$current_theme_path"
-        fi
-        if [ -n "$orig_font_30" ]; then
-            sudo sed -i "s|$orig_font_30|$selected 30|g" "$current_theme_path"
-        fi
-        if [ -n "$orig_item_font" ]; then
-            sudo sed -i "s|$orig_item_font|$selected 30|g" "$current_theme_path"
+        # Get actual font name from created .pf2 file (GRUB may add "Regular" etc)
+        local actual_font_name=$(strings "$theme_dir/unicode-30.pf2" 2>/dev/null | grep -A1 "^NAME" | tail -1 | sed 's/ [0-9]*$//')
+        if [ -z "$actual_font_name" ]; then
+            # Fallback: try to get from FAMI field
+            actual_font_name=$(strings "$theme_dir/unicode-30.pf2" 2>/dev/null | grep -A1 "^FAMI" | tail -1)
         fi
         
-        # Also replace any remaining custom font references
-        sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$selected 30\"/g" "$current_theme_path"
-        sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$selected 30\"/g" "$current_theme_path"
+        # If still empty, use selected name
+        [ -z "$actual_font_name" ] && actual_font_name="$selected"
         
-        print_success "${L[font_replaced]}: $selected"
+        print_info "Font name in .pf2: $actual_font_name"
+        
+        # Replace all fonts in theme.txt with actual font name
+        sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$actual_font_name 30\"/g" "$current_theme_path"
+        sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$actual_font_name 30\"/g" "$current_theme_path"
+        
+        print_success "${L[font_replaced]}: $actual_font_name"
         gum input --placeholder "${L[press_enter]}" > /dev/null
     else
         echo -e "${BOLD}🔤 ${L[fix_fonts]}:${NC}\n"
@@ -576,14 +572,20 @@ fix_theme_fonts() {
             local font_path="${FONT_OPTIONS[$selected]}"
             
             echo "Creating fonts..."
-            sudo grub-mkfont -n "$selected" -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path"
-            sudo grub-mkfont -n "$selected" -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path"
+            sudo grub-mkfont -n "$selected" -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path" 2>/dev/null
+            sudo grub-mkfont -n "$selected" -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path" 2>/dev/null
+            
+            # Get actual font name from created .pf2 file
+            local actual_font_name=$(strings "$theme_dir/unicode-30.pf2" 2>/dev/null | grep -A1 "^FAMI" | tail -1)
+            [ -z "$actual_font_name" ] && actual_font_name="$selected"
+            
+            echo "Font name in .pf2: $actual_font_name"
             
             # Replace fonts
-            sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$selected 30\"/g" "$current_theme_path"
-            sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$selected 30\"/g" "$current_theme_path"
+            sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$actual_font_name 30\"/g" "$current_theme_path"
+            sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$actual_font_name 30\"/g" "$current_theme_path"
             
-            print_success "${L[font_replaced]}: $selected"
+            print_success "${L[font_replaced]}: $actual_font_name"
             read -p "${L[press_enter]}"
         fi
     fi
