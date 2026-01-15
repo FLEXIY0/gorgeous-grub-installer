@@ -22,7 +22,9 @@ GRUB_THEMES_DIR="/boot/grub/themes"
 GRUB_CONFIG="/etc/default/grub"
 TEMP_DIR="/tmp/gorgeous-grub-install"
 CONFIG_DIR="$HOME/.config/gorgeous-grub"
+CONFIG_DIR="$HOME/.config/gorgeous-grub"
 CONFIG_FILE="$CONFIG_DIR/config"
+THEMES_DB="$CONFIG_DIR/themes.db"
 USE_GUM=false
 LANG_CODE="en"
 
@@ -43,6 +45,7 @@ load_english() {
     L[current_theme]="Current theme"
     L[installed_themes]="Installed themes"
     L[install_new]="Install new theme"
+    L[rescan_themes]="Rescan theme list"
     L[apply_installed]="Apply installed theme"
     L[remove_theme]="Remove theme"
     L[reboot]="Reboot system"
@@ -99,6 +102,9 @@ load_english() {
     L[select_font]="Select system font"
     L[font_replaced]="Font replaced successfully"
     L[no_theme_applied]="No theme applied"
+    L[updating_list]="Updating theme list..."
+    L[list_updated]="Theme list updated!"
+    L[update_failed]="Failed to update theme list"
     
     # Categories
     L[cat_gaming]="Gaming"
@@ -115,6 +121,7 @@ load_russian() {
     L[current_theme]="Текущая тема"
     L[installed_themes]="Установлено тем"
     L[install_new]="Установить новую тему"
+    L[rescan_themes]="Обновить список тем"
     L[apply_installed]="Применить установленную тему"
     L[remove_theme]="Удалить тему"
     L[reboot]="Перезагрузить систему"
@@ -172,6 +179,9 @@ load_russian() {
     L[select_font]="Выберите системный шрифт"
     L[font_replaced]="Шрифт успешно заменён"
     L[no_theme_applied]="Тема не применена"
+    L[updating_list]="Обновление списка тем..."
+    L[list_updated]="Список тем обновлен!"
+    L[update_failed]="Не удалось обновить список"
     
     # Categories
     L[cat_gaming]="Игровые"
@@ -239,7 +249,8 @@ get_category_name() {
 }
 
 # Theme database: "Name|URL|Type|Folder|Desc_EN|Desc_RU|Category"
-declare -a THEMES=(
+declare -a THEMES=()
+declare -a DEFAULT_THEMES=(
     "Minegrub|https://github.com/Lxtharia/minegrub-theme|github|minegrub|Minecraft main menu|Minecraft главное меню|gaming"
     "Minegrub Combined|https://github.com/Lxtharia/double-minegrub-menu|github-script|minegrub|Double Minecraft menu|Двойное меню Minecraft|gaming"
     "Minegrub World Select|https://github.com/Lxtharia/minegrub-world-sel-theme|github|minegrub-world-selection|Minecraft world select|Minecraft выбор мира|gaming"
@@ -291,6 +302,87 @@ declare -a THEMES=(
     "Grand Theft Gentoo|https://gitlab.com/imnotpua/grub_gtg|gitlab|gtg|GTA style|Стиль GTA|other"
     "LiquidGlass|https://github.com/Purp1eDuck2008/Liquid-GRUB|github|LiquidGlass|Glass effect|Стеклянный эффект|other"
 )
+
+update_themes() {
+    print_header
+    print_info "${L[updating_list]}"
+    
+    local readme_url="https://raw.githubusercontent.com/Jacksaur/Gorgeous-GRUB/main/README.md"
+    local temp_readme="$TEMP_DIR/README.md"
+    
+    mkdir -p "$TEMP_DIR"
+    
+    if $USE_GUM; then
+        gum spin --spinner dot --title "${L[updating_list]}" -- \
+            curl -sL "$readme_url" -o "$temp_readme"
+    else
+        curl -sL "$readme_url" -o "$temp_readme"
+    fi
+    
+    if [ ! -f "$temp_readme" ]; then
+        print_error "${L[update_failed]}"
+        sleep 2
+        return 1
+    fi
+    
+    mkdir -p "$CONFIG_DIR"
+    : > "$THEMES_DB"
+    
+    # Parse: matches [**Name**](URL)
+    # We use grep to extract the lines with links, then sed to extract name and url
+    # Regex explanation: \[\*\*([^*]+)\*\*\]\(([^)]+)\)
+    
+    local count=0
+    
+    while IFS= read -r line; do
+        # Extract all matches in the line
+        while [[ "$line" =~ \[\*\*([^\*]+)\*\*\]\(([^\)]+)\) ]]; do
+            local name="${BASH_REMATCH[1]}"
+            local url="${BASH_REMATCH[2]}"
+            
+            # Determine type
+            local type="github"
+            if [[ "$url" == *"pling.com"* ]]; then
+                type="pling"
+            elif [[ "$url" == *"gitlab.com"* ]]; then
+                type="gitlab"
+            fi
+            
+            # Simple deduplication based on name
+            if ! grep -q "^$name|" "$THEMES_DB" 2>/dev/null; then
+                 # Format: Name|URL|Type|Folder|Desc_EN|Desc_RU|Category
+                 # We don't have descriptions/folders/categories from the simple link
+                 # So we use placeholders
+                 echo "$name|$url|$type||$name|$name|other" >> "$THEMES_DB"
+                 ((count++))
+            fi
+            
+            # Remove the matched part to continue searching in the string
+            line=${line#*"${BASH_REMATCH[0]}"}
+        done
+    done < "$temp_readme"
+    
+    rm -f "$temp_readme"
+    
+    print_success "${L[list_updated]} ($count themes)"
+    if $USE_GUM; then
+        gum input --placeholder "${L[press_enter]}" > /dev/null
+    else
+        read -p "${L[press_enter]}"
+    fi
+    
+    load_themes
+}
+
+load_themes() {
+    THEMES=()
+    if [ -f "$THEMES_DB" ] && [ -s "$THEMES_DB" ]; then
+        mapfile -t THEMES < "$THEMES_DB"
+    else
+        # Fallback to default
+        THEMES=("${DEFAULT_THEMES[@]}")
+    fi
+}
 
 get_theme_desc() {
     local theme_data=$1
@@ -1314,6 +1406,7 @@ main_menu() {
             
             local options=(
                 "🎨 ${L[install_new]}"
+                "📡 ${L[rescan_themes]}"
                 "✅ ${L[apply_installed]}"
                 "🔄 ${L[reboot]}"
                 "🗑️  ${L[remove_theme]}"
@@ -1335,6 +1428,7 @@ main_menu() {
             
             case "$selected" in
                 "🎨 ${L[install_new]}") select_theme_to_install ;;
+                "📡 ${L[rescan_themes]}") update_themes ;;
                 "✅ ${L[apply_installed]}") select_installed_theme ;;
                 "🔄 ${L[reboot]}") reboot_system ;;
                 "🗑️  ${L[remove_theme]}") remove_theme_menu ;;
@@ -1357,6 +1451,7 @@ main_menu() {
             
             echo -e "${BOLD}Menu:${NC}"
             echo -e "  ${CYAN}1${NC}) 🎨 ${L[install_new]}"
+            echo -e "  ${CYAN}u${NC}) 📡 ${L[rescan_themes]}"
             echo -e "  ${CYAN}2${NC}) ✅ ${L[apply_installed]}"
             echo -e "  ${CYAN}3${NC}) 🗑️  ${L[remove_theme]}"
             echo -e "  ${CYAN}r${NC}) 🔄 ${L[reboot]}"
@@ -1372,6 +1467,7 @@ main_menu() {
             
             case $action in
                 1) select_theme_to_install ;;
+                u) update_themes ;;
                 2) select_installed_theme ;;
                 r) reboot_system ;;
                 3) remove_theme_menu ;;
@@ -1468,6 +1564,7 @@ install_by_name() {
 # Load saved config
 load_config
 load_language
+load_themes
 
 check_dependencies
 detect_grub
