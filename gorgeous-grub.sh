@@ -390,7 +390,7 @@ cleanup_double_menu() {
     else
         read -p "${L[press_enter]}"
     fi
-    fi
+
 }
 
 reset_to_default() {
