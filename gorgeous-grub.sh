@@ -93,6 +93,10 @@ load_english() {
     L[using_grub]="Using"
     L[install_script]="Running install script..."
     L[install_complete]="Installation complete!"
+    L[fix_fonts]="Fix theme fonts (Cyrillic)"
+    L[select_font]="Select system font"
+    L[font_replaced]="Font replaced successfully"
+    L[no_theme_applied]="No theme applied"
     
     # Categories
     L[cat_gaming]="Gaming"
@@ -159,6 +163,10 @@ load_russian() {
     L[using_grub]="Используется"
     L[install_script]="Запуск скрипта установки..."
     L[install_complete]="Установка завершена!"
+    L[fix_fonts]="Исправить шрифты темы (кириллица)"
+    L[select_font]="Выберите системный шрифт"
+    L[font_replaced]="Шрифт успешно заменён"
+    L[no_theme_applied]="Тема не применена"
     
     # Categories
     L[cat_gaming]="Игровые"
@@ -452,6 +460,128 @@ set_grub_language() {
             
             sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
             print_success "${L[grub_lang_set]} $new_lang"
+            read -p "${L[press_enter]}"
+        fi
+    fi
+}
+
+fix_theme_fonts() {
+    print_header
+    
+    # Get current theme
+    local current_theme_path=$(grep "^GRUB_THEME=" "$GRUB_CONFIG" 2>/dev/null | cut -d'=' -f2 | tr -d '"')
+    
+    if [ -z "$current_theme_path" ] || [ ! -f "$current_theme_path" ]; then
+        print_error "${L[no_theme_applied]}"
+        sleep 2
+        return
+    fi
+    
+    local theme_dir=$(dirname "$current_theme_path")
+    local theme_name=$(basename "$theme_dir")
+    
+    # Available fonts with Cyrillic support
+    declare -A FONT_OPTIONS
+    FONT_OPTIONS["DejaVu Sans"]="/usr/share/fonts/TTF/DejaVuSans.ttf"
+    FONT_OPTIONS["DejaVu Sans Bold"]="/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
+    FONT_OPTIONS["Liberation Sans"]="/usr/share/fonts/TTF/LiberationSans-Regular.ttf"
+    FONT_OPTIONS["Liberation Mono"]="/usr/share/fonts/TTF/LiberationMono-Regular.ttf"
+    
+    # Find available fonts
+    local available_fonts=()
+    for font_name in "${!FONT_OPTIONS[@]}"; do
+        if [ -f "${FONT_OPTIONS[$font_name]}" ]; then
+            available_fonts+=("$font_name")
+        fi
+    done
+    
+    # Add Noto if available
+    if ls /usr/share/fonts/noto/NotoSans-Regular.ttf 2>/dev/null; then
+        available_fonts+=("Noto Sans")
+        FONT_OPTIONS["Noto Sans"]="/usr/share/fonts/noto/NotoSans-Regular.ttf"
+    fi
+    
+    if [ ${#available_fonts[@]} -eq 0 ]; then
+        print_error "No suitable fonts found"
+        sleep 2
+        return
+    fi
+    
+    if $USE_GUM; then
+        echo ""
+        gum style --foreground 212 --bold "🔤 ${L[fix_fonts]}"
+        gum style --foreground 245 "Theme: $theme_name"
+        echo ""
+        
+        local selected
+        selected=$(printf '%s\n' "${available_fonts[@]}" | gum choose \
+            --cursor "▸ " \
+            --cursor.foreground 212)
+        
+        if [ -z "$selected" ]; then
+            return
+        fi
+        
+        local font_path="${FONT_OPTIONS[$selected]}"
+        
+        gum spin --spinner dot --title "Creating fonts..." -- bash -c "
+            sudo grub-mkfont -s 20 -o '$theme_dir/unicode-20.pf2' '$font_path'
+            sudo grub-mkfont -s 30 -o '$theme_dir/unicode-30.pf2' '$font_path'
+        "
+        
+        # Get original font names from theme.txt
+        local orig_font_20=$(grep -oP 'font = "\K[^"]+' "$current_theme_path" | grep -E '(18|20|22)' | head -1)
+        local orig_font_30=$(grep -oP 'font = "\K[^"]+' "$current_theme_path" | grep -E '(28|30|32)' | head -1)
+        local orig_item_font=$(grep -oP 'item_font = "\K[^"]+' "$current_theme_path" | head -1)
+        
+        # Replace fonts in theme.txt
+        if [ -n "$orig_font_20" ]; then
+            sudo sed -i "s|$orig_font_20|$selected 20|g" "$current_theme_path"
+        fi
+        if [ -n "$orig_font_30" ]; then
+            sudo sed -i "s|$orig_font_30|$selected 30|g" "$current_theme_path"
+        fi
+        if [ -n "$orig_item_font" ]; then
+            sudo sed -i "s|$orig_item_font|$selected 30|g" "$current_theme_path"
+        fi
+        
+        # Also replace any remaining custom font references
+        sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$selected 30\"/g" "$current_theme_path"
+        sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$selected 30\"/g" "$current_theme_path"
+        
+        print_success "${L[font_replaced]}: $selected"
+        gum input --placeholder "${L[press_enter]}" > /dev/null
+    else
+        echo -e "${BOLD}🔤 ${L[fix_fonts]}:${NC}\n"
+        echo -e "Theme: ${CYAN}$theme_name${NC}\n"
+        
+        local idx=1
+        for font in "${available_fonts[@]}"; do
+            echo -e "  ${CYAN}$idx${NC}) $font"
+            ((idx++))
+        done
+        
+        echo -e "\n  ${CYAN}0${NC}) ← Back"
+        echo ""
+        read -p "> " choice
+        
+        if [ "$choice" == "0" ] || [ -z "$choice" ]; then
+            return
+        fi
+        
+        if [ "$choice" -ge 1 ] && [ "$choice" -le ${#available_fonts[@]} ]; then
+            local selected="${available_fonts[$((choice-1))]}"
+            local font_path="${FONT_OPTIONS[$selected]}"
+            
+            echo "Creating fonts..."
+            sudo grub-mkfont -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path"
+            sudo grub-mkfont -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path"
+            
+            # Replace fonts
+            sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$selected 30\"/g" "$current_theme_path"
+            sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$selected 30\"/g" "$current_theme_path"
+            
+            print_success "${L[font_replaced]}: $selected"
             read -p "${L[press_enter]}"
         fi
     fi
@@ -1050,6 +1180,7 @@ main_menu() {
                 "✅ ${L[apply_installed]}"
                 "🗑️  ${L[remove_theme]}"
                 "🖥️  ${L[set_resolution]}"
+                "🔤 ${L[fix_fonts]}"
                 "🌐 ${L[grub_lang]}"
                 "🔄 ${L[disable_double]}"
                 "🌍 ${L[change_language]}"
@@ -1061,13 +1192,14 @@ main_menu() {
                 --cursor "▸ " \
                 --cursor.foreground 212 \
                 --selected.foreground 212 \
-                --height 10)
+                --height 11)
             
             case "$selected" in
                 "🎨 ${L[install_new]}") select_theme_to_install ;;
                 "✅ ${L[apply_installed]}") select_installed_theme ;;
                 "🗑️  ${L[remove_theme]}") remove_theme_menu ;;
                 "🖥️  ${L[set_resolution]}") set_resolution_menu ;;
+                "🔤 ${L[fix_fonts]}") fix_theme_fonts ;;
                 "🌐 ${L[grub_lang]}") set_grub_language ;;
                 "🔄 ${L[disable_double]}") cleanup_double_menu ;;
                 "🌍 ${L[change_language]}") select_language ;;
@@ -1086,9 +1218,10 @@ main_menu() {
             echo -e "  ${CYAN}2${NC}) ✅ ${L[apply_installed]}"
             echo -e "  ${CYAN}3${NC}) 🗑️  ${L[remove_theme]}"
             echo -e "  ${CYAN}4${NC}) 🖥️  ${L[set_resolution]}"
-            echo -e "  ${CYAN}5${NC}) 🌐 ${L[grub_lang]}"
-            echo -e "  ${CYAN}6${NC}) 🔄 ${L[disable_double]}"
-            echo -e "  ${CYAN}7${NC}) 🌍 ${L[change_language]}"
+            echo -e "  ${CYAN}5${NC}) 🔤 ${L[fix_fonts]}"
+            echo -e "  ${CYAN}6${NC}) 🌐 ${L[grub_lang]}"
+            echo -e "  ${CYAN}7${NC}) 🔄 ${L[disable_double]}"
+            echo -e "  ${CYAN}8${NC}) 🌍 ${L[change_language]}"
             echo -e "  ${CYAN}0${NC}) 🚪 ${L[exit]}"
             echo ""
             read -p "> " action
@@ -1098,9 +1231,10 @@ main_menu() {
                 2) select_installed_theme ;;
                 3) remove_theme_menu ;;
                 4) set_resolution_menu ;;
-                5) set_grub_language ;;
-                6) cleanup_double_menu ;;
-                7) select_language ;;
+                5) fix_theme_fonts ;;
+                6) set_grub_language ;;
+                7) cleanup_double_menu ;;
+                8) select_language ;;
                 0)
                     echo -e "\n${GREEN}${L[goodbye]} 👋${NC}\n"
                     exit 0
