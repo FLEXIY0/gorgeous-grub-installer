@@ -400,6 +400,12 @@ reset_to_default() {
     # Remove theme
     sudo sed -i '/^GRUB_THEME=/d' "$GRUB_CONFIG"
     
+    # Clear GRUB environment cache (fixes "file not found" errors for removed themes)
+    print_info "Clearing GRUB cache..."
+    sudo grub-editenv - unset theme
+    sudo grub-editenv - unset config_file
+    sudo grub-editenv - unset menu_auto_hide
+    
     # Remove custom font settings if any (though usually inside theme)
     # Also remove custom resolution if we want to be thorough? 
     # Let's keep resolution as it might be needed for the monitor. 
