@@ -81,6 +81,9 @@ load_english() {
     L[enter_manually]="Enter manually..."
     L[resolution_set]="Resolution set"
     L[double_disabled]="Double menu disabled"
+    L[grub_lang]="GRUB language"
+    L[grub_lang_set]="GRUB language set to"
+    L[grub_lang_note]="Note: Some themes don't support Cyrillic fonts"
     L[select_language]="Select language"
     L[language_saved]="Language saved"
     L[settings]="Settings"
@@ -144,6 +147,9 @@ load_russian() {
     L[enter_manually]="Ввести вручную..."
     L[resolution_set]="Разрешение установлено"
     L[double_disabled]="Двойное меню отключено"
+    L[grub_lang]="Язык GRUB"
+    L[grub_lang_set]="Язык GRUB изменён на"
+    L[grub_lang_note]="Примечание: Некоторые темы не поддерживают кириллицу"
     L[select_language]="Выберите язык"
     L[language_saved]="Язык сохранён"
     L[settings]="Настройки"
@@ -372,6 +378,71 @@ cleanup_double_menu() {
         gum input --placeholder "${L[press_enter]}" > /dev/null
     else
         read -p "${L[press_enter]}"
+    fi
+}
+
+set_grub_language() {
+    print_header
+    
+    local current_lang=$(grep "^GRUB_LANG=" "$GRUB_CONFIG" 2>/dev/null | cut -d'=' -f2 | tr -d '"')
+    
+    if $USE_GUM; then
+        echo ""
+        gum style --foreground 212 --bold "🌐 ${L[grub_lang]}"
+        gum style --foreground 245 "Current: ${current_lang:-system}"
+        gum style --foreground 11 "${L[grub_lang_note]}"
+        echo ""
+        
+        local selected
+        selected=$(printf "English (en)\nРусский (ru)" | gum choose \
+            --cursor "▸ " \
+            --cursor.foreground 212)
+        
+        if [ -z "$selected" ]; then
+            return
+        fi
+        
+        local new_lang=""
+        case "$selected" in
+            "English (en)") new_lang="en" ;;
+            "Русский (ru)") new_lang="ru" ;;
+        esac
+        
+        if [ -n "$new_lang" ]; then
+            sudo sed -i '/^GRUB_LANG=/d' "$GRUB_CONFIG"
+            echo "GRUB_LANG=$new_lang" | sudo tee -a "$GRUB_CONFIG" > /dev/null
+            
+            gum spin --spinner dot --title "${L[updating_grub]}" -- \
+                sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+            
+            print_success "${L[grub_lang_set]} $new_lang"
+            gum input --placeholder "${L[press_enter]}" > /dev/null
+        fi
+    else
+        echo -e "${BOLD}🌐 ${L[grub_lang]}:${NC}\n"
+        echo -e "Current: ${CYAN}${current_lang:-system}${NC}"
+        echo -e "${YELLOW}${L[grub_lang_note]}${NC}\n"
+        
+        echo -e "  ${CYAN}1${NC}) English (en)"
+        echo -e "  ${CYAN}2${NC}) Русский (ru)"
+        echo -e "\n  ${CYAN}0${NC}) ← Back"
+        echo ""
+        read -p "> " choice
+        
+        local new_lang=""
+        case $choice in
+            1) new_lang="en" ;;
+            2) new_lang="ru" ;;
+            0) return ;;
+        esac
+        
+        if [ -n "$new_lang" ]; then
+            sudo sed -i '/^GRUB_LANG=/d' "$GRUB_CONFIG"
+            echo "GRUB_LANG=$new_lang" | sudo tee -a "$GRUB_CONFIG" > /dev/null
+            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+            print_success "${L[grub_lang_set]} $new_lang"
+            read -p "${L[press_enter]}"
+        fi
     fi
 }
 
@@ -968,6 +1039,7 @@ main_menu() {
                 "✅ ${L[apply_installed]}"
                 "🗑️  ${L[remove_theme]}"
                 "🖥️  ${L[set_resolution]}"
+                "🌐 ${L[grub_lang]}"
                 "🔄 ${L[disable_double]}"
                 "🌍 ${L[change_language]}"
                 "🚪 ${L[exit]}"
@@ -978,16 +1050,15 @@ main_menu() {
                 --cursor "▸ " \
                 --cursor.foreground 212 \
                 --selected.foreground 212 \
-                --height 9)
+                --height 10)
             
             case "$selected" in
                 "🎨 ${L[install_new]}") select_theme_to_install ;;
                 "✅ ${L[apply_installed]}") select_installed_theme ;;
                 "🗑️  ${L[remove_theme]}") remove_theme_menu ;;
                 "🖥️  ${L[set_resolution]}") set_resolution_menu ;;
-                "🔄 ${L[disable_double]}")
-                    cleanup_double_menu
-                    ;;
+                "🌐 ${L[grub_lang]}") set_grub_language ;;
+                "🔄 ${L[disable_double]}") cleanup_double_menu ;;
                 "🌍 ${L[change_language]}") select_language ;;
                 "🚪 ${L[exit]}")
                     echo ""
@@ -1004,8 +1075,9 @@ main_menu() {
             echo -e "  ${CYAN}2${NC}) ✅ ${L[apply_installed]}"
             echo -e "  ${CYAN}3${NC}) 🗑️  ${L[remove_theme]}"
             echo -e "  ${CYAN}4${NC}) 🖥️  ${L[set_resolution]}"
-            echo -e "  ${CYAN}5${NC}) 🔄 ${L[disable_double]}"
-            echo -e "  ${CYAN}6${NC}) 🌍 ${L[change_language]}"
+            echo -e "  ${CYAN}5${NC}) 🌐 ${L[grub_lang]}"
+            echo -e "  ${CYAN}6${NC}) 🔄 ${L[disable_double]}"
+            echo -e "  ${CYAN}7${NC}) 🌍 ${L[change_language]}"
             echo -e "  ${CYAN}0${NC}) 🚪 ${L[exit]}"
             echo ""
             read -p "> " action
@@ -1015,8 +1087,9 @@ main_menu() {
                 2) select_installed_theme ;;
                 3) remove_theme_menu ;;
                 4) set_resolution_menu ;;
-                5) cleanup_double_menu ;;
-                6) select_language ;;
+                5) set_grub_language ;;
+                6) cleanup_double_menu ;;
+                7) select_language ;;
                 0)
                     echo -e "\n${GREEN}${L[goodbye]} 👋${NC}\n"
                     exit 0
