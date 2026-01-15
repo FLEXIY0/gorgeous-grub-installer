@@ -339,10 +339,17 @@ update_themes() {
         while [[ "$line" =~ \[\*\*([^\*]+)\*\*\]\(([^\)]+)\) ]]; do
             local name="${BASH_REMATCH[1]}"
             local url="${BASH_REMATCH[2]}"
-            
-            # Determine type
             local type="github"
-            if [[ "$url" == *"pling.com"* ]]; then
+            local folder=""
+            
+            # Check for GitHub subfolder
+            # Example: https://github.com/Patato777/dotfiles/tree/main/grub
+            if [[ "$url" =~ ^(https://github\.com/[^/]+/[^/]+)/tree/[^/]+/(.+)$ ]]; then
+                type="github-subfolder"
+                local full_repo_url="${BASH_REMATCH[1]}"
+                folder="${BASH_REMATCH[2]}"
+                url="$full_repo_url"
+            elif [[ "$url" == *"pling.com"* ]]; then
                 type="pling"
             elif [[ "$url" == *"gitlab.com"* ]]; then
                 type="gitlab"
@@ -351,9 +358,7 @@ update_themes() {
             # Simple deduplication based on name
             if ! grep -q "^$name|" "$THEMES_DB" 2>/dev/null; then
                  # Format: Name|URL|Type|Folder|Desc_EN|Desc_RU|Category
-                 # We don't have descriptions/folders/categories from the simple link
-                 # So we use placeholders
-                 echo "$name|$url|$type||$name|$name|other" >> "$THEMES_DB"
+                 echo "$name|$url|$type|$folder|$name|$name|other" >> "$THEMES_DB"
                  ((count++))
             fi
             
