@@ -326,24 +326,19 @@ update_themes() {
     fi
     
     mkdir -p "$CONFIG_DIR"
-    : > "$THEMES_DB"
+    local temp_db="$TEMP_DIR/themes.tmp"
+    : > "$temp_db"
     
-    # Parse: matches [**Name**](URL)
-    # We use grep to extract the lines with links, then sed to extract name and url
-    # Regex explanation: \[\*\*([^*]+)\*\*\]\(([^)]+)\)
-    
-    local count=0
-    
-    while IFS= read -r line; do
-        # Extract all matches in the line
-        while [[ "$line" =~ \[\*\*([^\*]+)\*\*\]\(([^\)]+)\) ]]; do
+    # Optimize parsing: Extract all [**Name**](URL) format links at once using grep (pcre)
+    # This avoids slow line-by-line bash looping over the entire file
+    grep -oP '\[\*\*.*?\*\*\]\(.*?\)' "$temp_readme" | while read -r match; do
+        if [[ "$match" =~ \[\*\*([^\*]+)\*\*\]\(([^\)]+)\) ]]; then
             local name="${BASH_REMATCH[1]}"
             local url="${BASH_REMATCH[2]}"
             local type="github"
             local folder=""
             
             # Check for GitHub subfolder
-            # Example: https://github.com/Patato777/dotfiles/tree/main/grub
             if [[ "$url" =~ ^(https://github\.com/[^/]+/[^/]+)/tree/[^/]+/(.+)$ ]]; then
                 type="github-subfolder"
                 local full_repo_url="${BASH_REMATCH[1]}"
@@ -355,19 +350,16 @@ update_themes() {
                 type="gitlab"
             fi
             
-            # Simple deduplication based on name
-            if ! grep -q "^$name|" "$THEMES_DB" 2>/dev/null; then
-                 # Format: Name|URL|Type|Folder|Desc_EN|Desc_RU|Category
-                 echo "$name|$url|$type|$folder|$name|$name|other" >> "$THEMES_DB"
-                 ((count++))
-            fi
-            
-            # Remove the matched part to continue searching in the string
-            line=${line#*"${BASH_REMATCH[0]}"}
-        done
-    done < "$temp_readme"
+            # Append to temp DB (Name|URL|Type|Folder|Desc|Desc|Cat)
+            echo "$name|$url|$type|$folder|$name|$name|other" >> "$temp_db"
+        fi
+    done
     
-    rm -f "$temp_readme"
+    # Deduplicate by Name (1st column) and save to actual DB
+    awk -F'|' '!seen[$1]++' "$temp_db" > "$THEMES_DB"
+    local count=$(wc -l < "$THEMES_DB")
+    
+    rm -f "$temp_readme" "$temp_db"
     
     print_success "${L[list_updated]} ($count themes)"
     if $USE_GUM; then
