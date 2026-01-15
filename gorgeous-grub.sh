@@ -571,37 +571,34 @@ fix_theme_fonts() {
     local font_file_20="$theme_dir/grub-font-20.pf2"
     local font_file_30="$theme_dir/grub-font-30.pf2"
     
-    sudo grub-mkfont -n "$selected" -s 20 -o "$font_file_20" "$font_path" 2>&1 | grep -v "^ПРЕДУПРЕЖДЕНИЕ" || true
-    sudo grub-mkfont -n "$selected" -s 30 -o "$font_file_30" "$font_path" 2>&1 | grep -v "^ПРЕДУПРЕЖДЕНИЕ" || true
+    local mkfont_output=""
+    
+    # We use -v (verbose) to get the "Font name: ..." output which is the authoritative name GRUB assigns
+    sudo grub-mkfont -v -n "$selected" -s 20 -o "$font_file_20" "$font_path" >/dev/null 2>&1 || true
+    mkfont_output=$(sudo grub-mkfont -v -n "$selected" -s 30 -o "$font_file_30" "$font_path" 2>&1)
     
     if [ ! -f "$font_file_30" ]; then
+        # Check for error in output
+        echo "$mkfont_output"
         print_error "Failed to create font file"
         sleep 2
         return
     fi
     
-    # Extract FULL font name from .pf2
-    # Logic: Look for PFF2NAME or NAME header, and read the NEXT line.
-    local grub_font_name=""
-    local strings_output=$(strings "$font_file_30" 2>/dev/null)
+    # Extract authoritative font name from verbose output
+    # Example output: "Font name: DejaVu Sans Regular 30"
+    local grub_font_name=$(echo "$mkfont_output" | grep "Font name:" | head -1 | cut -d: -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     
-    # Try PFF2NAME first (standard for modern grub-mkfont)
-    grub_font_name=$(echo "$strings_output" | grep -A1 "^PFF2NAME$" | tail -1)
-    
-    # If empty or equals header (grep failed to find next line), try NAME
-    if [ -z "$grub_font_name" ] || [ "$grub_font_name" == "PFF2NAME" ]; then
-        grub_font_name=$(echo "$strings_output" | grep -A1 "^NAME$" | tail -1)
-    fi
-    
-    # Clean up whitespace
-    grub_font_name=$(echo "$grub_font_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    
-    # Fallback to FAMI + size if needed
-    if [ -z "$grub_font_name" ] || [ "$grub_font_name" == "NAME" ]; then
-        local fami_name=$(echo "$strings_output" | grep -A1 "^FAMI$" | tail -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        if [ -n "$fami_name" ] && [ "$fami_name" != "FAMI" ]; then
-            grub_font_name="$fami_name 30"
+    # Fallback if verbose parsing failed (should not happen usually)
+    if [ -z "$grub_font_name" ]; then
+        # Try PFF2NAME from strings
+        local strings_output=$(strings "$font_file_30" 2>/dev/null)
+        grub_font_name=$(echo "$strings_output" | grep -A1 "^PFF2NAME$" | tail -1)
+        
+        if [ -z "$grub_font_name" ] || [ "$grub_font_name" == "PFF2NAME" ]; then
+             grub_font_name=$(echo "$strings_output" | grep -A1 "^NAME$" | tail -1)
         fi
+        grub_font_name=$(echo "$grub_font_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     fi
     
     # Absolute fallback
