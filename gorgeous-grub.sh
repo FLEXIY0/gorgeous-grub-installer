@@ -579,6 +579,9 @@ fix_theme_fonts() {
     local font_file_20="$theme_dir/grub-font-20.pf2"
     local font_file_30="$theme_dir/grub-font-30.pf2"
     
+    # Remove old files to ensure we don't use stale fonts if generation fails
+    sudo rm -f "$font_file_20" "$font_file_30"
+    
     local mkfont_output=""
     
     # We use -v (verbose) to get the "Font name: ..." output which is the authoritative name GRUB assigns
