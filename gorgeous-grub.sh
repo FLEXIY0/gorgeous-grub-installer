@@ -861,11 +861,23 @@ install_github_theme() {
         return 1
     fi
     
+    # Unified logic: Check for install.sh first
+    if [ -f "repo/install.sh" ]; then
+        print_info "${L[install_script]} (install.sh found)"
+        cd repo
+        chmod +x install.sh
+        sudo bash install.sh
+        cd ..
+        print_success "${L[install_complete]}"
+        return 0
+    fi
+
+    # Fallback to manual installation (theme.txt detection)
     local theme_path=""
     theme_path=$(find repo -name "theme.txt" -printf "%h\n" 2>/dev/null | head -1)
     
     if [ -z "$theme_path" ]; then
-        print_error "${L[theme_not_found]}"
+        print_error "${L[theme_not_found]} (No install.sh or theme.txt)"
         return 1
     fi
     
@@ -1096,9 +1108,9 @@ apply_theme() {
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[updating_grub]}" -- \
-            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg
     else
-        sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+        sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg
     fi
     
     print_success "${L[success]}"
