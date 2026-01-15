@@ -412,6 +412,11 @@ set_grub_language() {
             sudo sed -i '/^GRUB_LANG=/d' "$GRUB_CONFIG"
             echo "GRUB_LANG=$new_lang" | sudo tee -a "$GRUB_CONFIG" > /dev/null
             
+            # Remove ru.mo for English to work properly on systems with ru_RU locale
+            if [ "$new_lang" == "en" ]; then
+                sudo rm -f /boot/$GRUB_PREFIX/locale/ru.mo 2>/dev/null || true
+            fi
+            
             gum spin --spinner dot --title "${L[updating_grub]}" -- \
                 sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
             
@@ -439,6 +444,12 @@ set_grub_language() {
         if [ -n "$new_lang" ]; then
             sudo sed -i '/^GRUB_LANG=/d' "$GRUB_CONFIG"
             echo "GRUB_LANG=$new_lang" | sudo tee -a "$GRUB_CONFIG" > /dev/null
+            
+            # Remove ru.mo for English to work properly
+            if [ "$new_lang" == "en" ]; then
+                sudo rm -f /boot/$GRUB_PREFIX/locale/ru.mo 2>/dev/null || true
+            fi
+            
             sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
             print_success "${L[grub_lang_set]} $new_lang"
             read -p "${L[press_enter]}"
