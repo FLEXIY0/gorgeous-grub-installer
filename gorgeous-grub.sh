@@ -579,27 +579,43 @@ fix_theme_fonts() {
         sleep 2
         return
     fi
-    # Get actual font name from created .pf2 file (GRUB may add "Regular" etc)
-    # We look for a line ending in " 30" which contains our selected font name
-    local full_name_line=$(strings "$font_file_30" 2>/dev/null | grep "$selected" | grep " 30$" | head -1)
     
-    # Remove size from end (e.g., "DejaVu Sans Regular 30" -> "DejaVu Sans Regular")
-    local grub_font_name=$(echo "$full_name_line" | sed 's/ 30$//')
+    # Extract FULL font name from .pf2
+    # Logic: Look for PFF2NAME or NAME header, and read the NEXT line.
+    local grub_font_name=""
+    local strings_output=$(strings "$font_file_30" 2>/dev/null)
     
-    if [ -z "$grub_font_name" ]; then
-        # Fallback to FAMI field if specific size line not found
-        grub_font_name=$(strings "$font_file_30" 2>/dev/null | grep -A1 "^FAMI$" | tail -1)
+    # Try PFF2NAME first (standard for modern grub-mkfont)
+    grub_font_name=$(echo "$strings_output" | grep -A1 "^PFF2NAME$" | tail -1)
+    
+    # If empty or equals header (grep failed to find next line), try NAME
+    if [ -z "$grub_font_name" ] || [ "$grub_font_name" == "PFF2NAME" ]; then
+        grub_font_name=$(echo "$strings_output" | grep -A1 "^NAME$" | tail -1)
     fi
     
-    [ -z "$grub_font_name" ] && grub_font_name="$selected"
+    # Clean up whitespace
+    grub_font_name=$(echo "$grub_font_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     
-    print_info "GRUB font name: $grub_font_name"
+    # Fallback to FAMI + size if needed
+    if [ -z "$grub_font_name" ] || [ "$grub_font_name" == "NAME" ]; then
+        local fami_name=$(echo "$strings_output" | grep -A1 "^FAMI$" | tail -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        if [ -n "$fami_name" ] && [ "$fami_name" != "FAMI" ]; then
+            grub_font_name="$fami_name 30"
+        fi
+    fi
+    
+    # Absolute fallback
+    [ -z "$grub_font_name" ] && grub_font_name="$selected 30"
+    
+    print_info "GRUB font name: '$grub_font_name'"
     
     # Update theme.txt - replace ALL font references
     print_info "Updating theme.txt..."
     
-    sudo sed -i -E "s/(font *= *\")[^\"]+(\")/\1${grub_font_name} 30\2/g" "$current_theme_path"
-    sudo sed -i -E "s/(item_font *= *\")[^\"]+(\")/\1${grub_font_name} 30\2/g" "$current_theme_path"
+    # Use single quotes for sed to avoid variable expansion issues, pass value safely
+    # We replace the entire quoted string value
+    sudo sed -i -E "s/(font *= *\")[^\"]+(\")/\1${grub_font_name}\2/g" "$current_theme_path"
+    sudo sed -i -E "s/(item_font *= *\")[^\"]+(\")/\1${grub_font_name}\2/g" "$current_theme_path"
     
     # Verify
     echo ""
