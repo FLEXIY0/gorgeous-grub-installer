@@ -844,17 +844,20 @@ install_github_theme() {
     local folder=$2
     local name=$3
     
-    print_info "${L[cloning]}"
+    print_info "${L[cloning]} $url"
+    local log_file="$TEMP_DIR/clone.log"
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo 2>/dev/null
+            bash -c "git clone --depth 1 \"$url.git\" repo > \"$log_file\" 2>&1"
     else
-        git clone --depth 1 "$url.git" repo 2>/dev/null
+        git clone --depth 1 "$url.git" repo > "$log_file" 2>&1
     fi
     
     if [ $? -ne 0 ]; then
         print_error "${L[clone_failed]}"
+        echo -e "${RED}Error details:${NC}"
+        cat "$log_file"
         return 1
     fi
     
@@ -879,17 +882,20 @@ install_github_script_theme() {
     local url=$1
     local name=$2
     
-    print_info "${L[cloning]}"
+    print_info "${L[cloning]} $url"
+    local log_file="$TEMP_DIR/clone.log"
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo
+            bash -c "git clone --depth 1 \"$url.git\" repo > \"$log_file\" 2>&1"
     else
-        git clone --depth 1 "$url.git" repo
+        git clone --depth 1 "$url.git" repo > "$log_file" 2>&1
     fi
     
     if [ $? -ne 0 ]; then
         print_error "${L[clone_failed]}"
+        echo -e "${RED}Error details:${NC}"
+        cat "$log_file"
         return 1
     fi
     
@@ -909,17 +915,20 @@ install_github_with_installer() {
     local url=$1
     local name=$2
     
-    print_info "${L[cloning]}"
+    print_info "${L[cloning]} $url"
+    local log_file="$TEMP_DIR/clone.log"
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo
+            bash -c "git clone --depth 1 \"$url.git\" repo > \"$log_file\" 2>&1"
     else
-        git clone --depth 1 "$url.git" repo
+        git clone --depth 1 "$url.git" repo > "$log_file" 2>&1
     fi
     
     if [ $? -ne 0 ]; then
         print_error "${L[clone_failed]}"
+        echo -e "${RED}Error details:${NC}"
+        cat "$log_file"
         return 1
     fi
     
@@ -940,17 +949,20 @@ install_github_subfolder_theme() {
     local folder=$2
     local name=$3
     
-    print_info "${L[cloning]}"
+    print_info "${L[cloning]} $url"
+    local log_file="$TEMP_DIR/clone.log"
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo
+            bash -c "git clone --depth 1 \"$url.git\" repo > \"$log_file\" 2>&1"
     else
-        git clone --depth 1 "$url.git" repo
+        git clone --depth 1 "$url.git" repo > "$log_file" 2>&1
     fi
     
     if [ $? -ne 0 ]; then
         print_error "${L[clone_failed]}"
+        echo -e "${RED}Error details:${NC}"
+        cat "$log_file"
         return 1
     fi
     
@@ -975,17 +987,20 @@ install_gitlab_theme() {
     local folder=$2
     local name=$3
     
-    print_info "${L[cloning]}"
+    print_info "${L[cloning]} $url"
+    local log_file="$TEMP_DIR/clone.log"
     
     if $USE_GUM; then
         gum spin --spinner dot --title "${L[cloning]}" -- \
-            git clone --depth 1 "$url.git" repo
+            bash -c "git clone --depth 1 \"$url.git\" repo > \"$log_file\" 2>&1"
     else
-        git clone --depth 1 "$url.git" repo
+        git clone --depth 1 "$url.git" repo > "$log_file" 2>&1
     fi
     
     if [ $? -ne 0 ]; then
         print_error "${L[clone_failed]}"
+        echo -e "${RED}Error details:${NC}"
+        cat "$log_file"
         return 1
     fi
     
