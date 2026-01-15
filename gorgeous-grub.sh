@@ -343,6 +343,39 @@ print_info() {
 }
 
 # ════════════════════════════════════════════════════════════════════════════
+# 🧹 Cleanup Functions
+# ════════════════════════════════════════════════════════════════════════════
+
+cleanup_double_menu() {
+    print_info "${L[disable_double]}..."
+    
+    # Remove grub environment variable
+    sudo grub-editenv - unset config_file 2>/dev/null || true
+    
+    # Remove double menu files
+    sudo rm -f /etc/grub.d/05_twomenus 2>/dev/null || true
+    sudo rm -f /boot/grub/mainmenu.cfg 2>/dev/null || true
+    sudo rm -f /boot/grub2/mainmenu.cfg 2>/dev/null || true
+    
+    # Regenerate GRUB config
+    print_info "${L[updating_grub]}"
+    if $USE_GUM; then
+        gum spin --spinner dot --title "${L[updating_grub]}" -- \
+            sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+    else
+        sudo grub-mkconfig -o /boot/$GRUB_PREFIX/grub.cfg 2>/dev/null
+    fi
+    
+    print_success "${L[double_disabled]}"
+    
+    if $USE_GUM; then
+        gum input --placeholder "${L[press_enter]}" > /dev/null
+    else
+        read -p "${L[press_enter]}"
+    fi
+}
+
+# ════════════════════════════════════════════════════════════════════════════
 # 🔧 System Functions
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -953,9 +986,7 @@ main_menu() {
                 "🗑️  ${L[remove_theme]}") remove_theme_menu ;;
                 "🖥️  ${L[set_resolution]}") set_resolution_menu ;;
                 "🔄 ${L[disable_double]}")
-                    sudo grub-editenv - unset config_file 2>/dev/null || true
-                    print_success "${L[double_disabled]}"
-                    sleep 1
+                    cleanup_double_menu
                     ;;
                 "🌍 ${L[change_language]}") select_language ;;
                 "🚪 ${L[exit]}")
@@ -984,11 +1015,7 @@ main_menu() {
                 2) select_installed_theme ;;
                 3) remove_theme_menu ;;
                 4) set_resolution_menu ;;
-                5)
-                    sudo grub-editenv - unset config_file 2>/dev/null || true
-                    print_success "${L[double_disabled]}"
-                    sleep 1
-                    ;;
+                5) cleanup_double_menu ;;
                 6) select_language ;;
                 0)
                     echo -e "\n${GREEN}${L[goodbye]} 👋${NC}\n"
