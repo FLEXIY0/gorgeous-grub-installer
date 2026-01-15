@@ -579,15 +579,15 @@ fix_theme_fonts() {
         sleep 2
         return
     fi
+    # Get actual font name from created .pf2 file (GRUB may add "Regular" etc)
+    # We look for a line ending in " 30" which contains our selected font name
+    local full_name_line=$(strings "$font_file_30" 2>/dev/null | grep "$selected" | grep " 30$" | head -1)
     
-    # Extract FULL font name from .pf2 (NAME field contains full name with size)
-    # Format in .pf2: NAME\n<font_name> <size>
-    local full_name_line=$(strings "$font_file_30" 2>/dev/null | grep -A1 "^NAME$" | tail -1)
     # Remove size from end (e.g., "DejaVu Sans Regular 30" -> "DejaVu Sans Regular")
-    local grub_font_name=$(echo "$full_name_line" | sed 's/ [0-9]*$//')
+    local grub_font_name=$(echo "$full_name_line" | sed 's/ 30$//')
     
     if [ -z "$grub_font_name" ]; then
-        # Fallback to FAMI field
+        # Fallback to FAMI field if specific size line not found
         grub_font_name=$(strings "$font_file_30" 2>/dev/null | grep -A1 "^FAMI$" | tail -1)
     fi
     
