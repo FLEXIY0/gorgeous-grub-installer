@@ -480,32 +480,30 @@ fix_theme_fonts() {
     local theme_dir=$(dirname "$current_theme_path")
     local theme_name=$(basename "$theme_dir")
     
-    # Find all TTF fonts in system using fc-list
-    declare -A FONT_OPTIONS
-    local available_fonts=()
+    # Find all TTF/OTF fonts in system
+    declare -A FONT_PATHS
+    local font_names=()
     
-    while IFS=: read -r path name style; do
-        # Clean up font name
-        name=$(echo "$name" | sed 's/^ *//' | cut -d',' -f1)
+    while IFS= read -r line; do
+        local path=$(echo "$line" | cut -d: -f1)
+        local name=$(echo "$line" | cut -d: -f2 | sed 's/^ *//' | cut -d',' -f1)
         
-        # Skip empty names
         [ -z "$name" ] && continue
+        [[ "$path" != *.ttf && "$path" != *.otf && "$path" != *.ttc ]] && continue
+        [[ -v "FONT_PATHS[$name]" ]] && continue
         
-        # Only include TTF/OTF files
-        [[ "$path" == *.ttf || "$path" == *.otf ]] || continue
-        
-        # Skip duplicates
-        [[ -v "FONT_OPTIONS[$name]" ]] && continue
-        
-        FONT_OPTIONS["$name"]="$path"
-        available_fonts+=("$name")
-    done < <(fc-list --format="%{file}:%{family}:%{style}\n" 2>/dev/null | sort -t: -k2 -u | head -50)
+        FONT_PATHS["$name"]="$path"
+        font_names+=("$name")
+    done < <(fc-list --format="%{file}:%{family}\n" 2>/dev/null | sort -t: -k2 -u)
     
-    if [ ${#available_fonts[@]} -eq 0 ]; then
+    if [ ${#font_names[@]} -eq 0 ]; then
         print_error "No fonts found"
         sleep 2
         return
     fi
+    
+    local selected=""
+    local font_path=""
     
     if $USE_GUM; then
         echo ""
@@ -513,81 +511,109 @@ fix_theme_fonts() {
         gum style --foreground 245 "Theme: $theme_name"
         echo ""
         
-        local selected
-        selected=$(printf '%s\n' "${available_fonts[@]}" | gum choose \
-            --cursor "▸ " \
-            --cursor.foreground 212)
+        selected=$(printf '%s\n' "${font_names[@]}" | gum filter \
+            --placeholder "${L[search_placeholder]}" \
+            --height 15 \
+            --indicator "▸" \
+            --indicator.foreground 212)
         
-        if [ -z "$selected" ]; then
-            return
-        fi
-        
-        local font_path="${FONT_OPTIONS[$selected]}"
-        
-        # Request sudo upfront
-        sudo -v
-        
-        print_info "Creating fonts..."
-        sudo grub-mkfont -n "$selected" -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path" 2>/dev/null
-        sudo grub-mkfont -n "$selected" -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path" 2>/dev/null
-        
-        # Get actual font name from created .pf2 file (GRUB may add "Regular" etc)
-        local actual_font_name=$(strings "$theme_dir/unicode-30.pf2" 2>/dev/null | grep -A1 "^NAME" | tail -1 | sed 's/ [0-9]*$//')
-        if [ -z "$actual_font_name" ]; then
-            # Fallback: try to get from FAMI field
-            actual_font_name=$(strings "$theme_dir/unicode-30.pf2" 2>/dev/null | grep -A1 "^FAMI" | tail -1)
-        fi
-        
-        # If still empty, use selected name
-        [ -z "$actual_font_name" ] && actual_font_name="$selected"
-        
-        print_info "Font name in .pf2: $actual_font_name"
-        
-        # Replace all fonts in theme.txt with actual font name
-        sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$actual_font_name 30\"/g" "$current_theme_path"
-        sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$actual_font_name 30\"/g" "$current_theme_path"
-        
-        print_success "${L[font_replaced]}: $actual_font_name"
-        gum input --placeholder "${L[press_enter]}" > /dev/null
+        [ -z "$selected" ] && return
+        font_path="${FONT_PATHS[$selected]}"
     else
         echo -e "${BOLD}🔤 ${L[fix_fonts]}:${NC}\n"
         echo -e "Theme: ${CYAN}$theme_name${NC}\n"
+        echo -e "Enter font name to search (or number from list):\n"
         
+        # Show first 20 fonts
         local idx=1
-        for font in "${available_fonts[@]}"; do
+        for font in "${font_names[@]:0:20}"; do
             echo -e "  ${CYAN}$idx${NC}) $font"
             ((idx++))
         done
+        [ ${#font_names[@]} -gt 20 ] && echo -e "  ... and $((${#font_names[@]} - 20)) more"
         
         echo -e "\n  ${CYAN}0${NC}) ← Back"
         echo ""
         read -p "> " choice
         
-        if [ "$choice" == "0" ] || [ -z "$choice" ]; then
-            return
-        fi
+        [ "$choice" == "0" ] || [ -z "$choice" ] && return
         
-        if [ "$choice" -ge 1 ] && [ "$choice" -le ${#available_fonts[@]} ]; then
-            local selected="${available_fonts[$((choice-1))]}"
-            local font_path="${FONT_OPTIONS[$selected]}"
-            
-            echo "Creating fonts..."
-            sudo grub-mkfont -n "$selected" -s 20 -o "$theme_dir/unicode-20.pf2" "$font_path" 2>/dev/null
-            sudo grub-mkfont -n "$selected" -s 30 -o "$theme_dir/unicode-30.pf2" "$font_path" 2>/dev/null
-            
-            # Get actual font name from created .pf2 file
-            local actual_font_name=$(strings "$theme_dir/unicode-30.pf2" 2>/dev/null | grep -A1 "^FAMI" | tail -1)
-            [ -z "$actual_font_name" ] && actual_font_name="$selected"
-            
-            echo "Font name in .pf2: $actual_font_name"
-            
-            # Replace fonts
-            sudo sed -i -E "s/font = \"[^\"]+\"/font = \"$actual_font_name 30\"/g" "$current_theme_path"
-            sudo sed -i -E "s/item_font = \"[^\"]+\"/item_font = \"$actual_font_name 30\"/g" "$current_theme_path"
-            
-            print_success "${L[font_replaced]}: $actual_font_name"
-            read -p "${L[press_enter]}"
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#font_names[@]} ]; then
+            selected="${font_names[$((choice-1))]}"
+            font_path="${FONT_PATHS[$selected]}"
+        else
+            # Search by name
+            for name in "${font_names[@]}"; do
+                if [[ "${name,,}" == *"${choice,,}"* ]]; then
+                    selected="$name"
+                    font_path="${FONT_PATHS[$selected]}"
+                    break
+                fi
+            done
         fi
+    fi
+    
+    if [ -z "$font_path" ] || [ ! -f "$font_path" ]; then
+        print_error "Font not found: $selected"
+        sleep 2
+        return
+    fi
+    
+    print_info "Selected: $selected"
+    print_info "Path: $font_path"
+    
+    # Request sudo
+    sudo -v || return
+    
+    # Create .pf2 fonts
+    print_info "Creating .pf2 fonts (this may take a moment)..."
+    
+    local font_file_20="$theme_dir/grub-font-20.pf2"
+    local font_file_30="$theme_dir/grub-font-30.pf2"
+    
+    sudo grub-mkfont -n "$selected" -s 20 -o "$font_file_20" "$font_path" 2>&1 | grep -v "^ПРЕДУПРЕЖДЕНИЕ" || true
+    sudo grub-mkfont -n "$selected" -s 30 -o "$font_file_30" "$font_path" 2>&1 | grep -v "^ПРЕДУПРЕЖДЕНИЕ" || true
+    
+    if [ ! -f "$font_file_30" ]; then
+        print_error "Failed to create font file"
+        sleep 2
+        return
+    fi
+    
+    # Extract FULL font name from .pf2 (NAME field contains full name with size)
+    # Format in .pf2: NAME\n<font_name> <size>
+    local full_name_line=$(strings "$font_file_30" 2>/dev/null | grep -A1 "^NAME$" | tail -1)
+    # Remove size from end (e.g., "DejaVu Sans Regular 30" -> "DejaVu Sans Regular")
+    local grub_font_name=$(echo "$full_name_line" | sed 's/ [0-9]*$//')
+    
+    if [ -z "$grub_font_name" ]; then
+        # Fallback to FAMI field
+        grub_font_name=$(strings "$font_file_30" 2>/dev/null | grep -A1 "^FAMI$" | tail -1)
+    fi
+    
+    [ -z "$grub_font_name" ] && grub_font_name="$selected"
+    
+    print_info "GRUB font name: $grub_font_name"
+    
+    # Update theme.txt - replace ALL font references
+    print_info "Updating theme.txt..."
+    
+    sudo sed -i -E "s/(font *= *\")[^\"]+(\")/\1${grub_font_name} 30\2/g" "$current_theme_path"
+    sudo sed -i -E "s/(item_font *= *\")[^\"]+(\")/\1${grub_font_name} 30\2/g" "$current_theme_path"
+    
+    # Verify
+    echo ""
+    print_info "Verification:"
+    grep -E "font|item_font" "$current_theme_path" | head -4
+    echo ""
+    
+    print_success "${L[font_replaced]}: $grub_font_name"
+    print_info "${L[reboot_msg]}"
+    
+    if $USE_GUM; then
+        gum input --placeholder "${L[press_enter]}" > /dev/null
+    else
+        read -p "${L[press_enter]}"
     fi
 }
 
